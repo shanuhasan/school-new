@@ -1,72 +1,63 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Classes') }}
-        </h2>
+        <div class="page-heading"><div class="page-heading-copy"><div><h1 class="h3 mb-1">{{ __('Classes') }}</h1></div></div></div>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900 dark:text-gray-100">
-                    <div class="flex justify-between items-center mb-6">
-                        <form method="GET" action="{{ route('academic.classes.index') }}" class="flex">
-                            <input type="text" name="search" value="{{ request('search') }}" placeholder="Search classes..." class="border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full" />
-                            <button type="submit" class="ml-2 inline-flex items-center px-4 py-2 bg-gray-800 dark:bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-white dark:text-gray-800 uppercase tracking-widest hover:bg-gray-700 dark:hover:bg-white focus:bg-gray-700 dark:focus:bg-white active:bg-gray-900 dark:active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
-                                Search
-                            </button>
-                        </form>
-                        <a href="{{ route('academic.classes.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-500 focus:bg-indigo-500 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
-                            Add Class
-                        </a>
-                    </div>
+    <div class="panel">
+        <div class="panel-body p-3 p-lg-4">
+            <div class="panel-header d-flex justify-content-between align-items-center mb-0 border-bottom-0 pb-0">
+                <form method="GET" action="{{ route('academic.classes.index') }}" class="d-flex">
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search classes..." class="form-control me-2" style="max-width: 250px;">
+                    <button type="submit" class="btn btn-dark">Search</button>
+                </form>
+                <a href="{{ route('academic.classes.create') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-lg me-1"></i> Add Class
+                </a>
+            </div>
 
-                    @if(session('success'))
-                        <div class="mb-4 text-sm font-medium text-green-600 dark:text-green-400">
-                            {{ session('success') }}
-                        </div>
-                    @endif
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3">Name</th>
-                                    <th scope="col" class="px-6 py-3">Level</th>
-                                    <th scope="col" class="px-6 py-3">Created At</th>
-                                    <th scope="col" class="px-6 py-3">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($classes as $class)
-                                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                                        <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                            {{ $class->name }}
-                                        </td>
-                                        <td class="px-6 py-4">{{ $class->level }}</td>
-                                        <td class="px-6 py-4">{{ $class->created_at->format('Y-m-d') }}</td>
-                                        <td class="px-6 py-4">
-                                            <a href="{{ route('academic.classes.edit', $class) }}" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">Edit</a>
-                                            <form action="{{ route('academic.classes.destroy', $class) }}" method="POST" class="inline ml-2" onsubmit="return confirm('Are you sure?');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="font-medium text-red-600 dark:text-red-500 hover:underline">Delete</button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="4" class="px-6 py-4 text-center">No classes found.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <div class="mt-4">
-                        {{ $classes->links() }}
-                    </div>
+            @if(session('success'))
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
+            @endif
+
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col">Name</th>
+                            <th scope="col">Level</th>
+                            <th scope="col">Created At</th>
+                            <th scope="col" class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($classes as $class)
+                            <tr>
+                                <td class="fw-semibold">{{ $class->name }}</td>
+                                <td>{{ $class->level }}</td>
+                                <td>{{ $class->created_at->format('Y-m-d') }}</td>
+                                <td class="text-end">
+                                    <a href="{{ route('academic.classes.edit', $class) }}" class="btn btn-sm btn-outline-primary me-1">Edit</a>
+                                    <form action="{{ route('academic.classes.destroy', $class) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">No classes found.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="mt-3">
+                {{ $classes->links('pagination::bootstrap-5') }}
             </div>
         </div>
     </div>

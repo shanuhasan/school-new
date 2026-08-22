@@ -29,16 +29,18 @@ class EnsureTenantContext
             } else {
                 abort(403, 'You do not have access to this school.');
             }
-        } elseif ($user && !$user->hasRole('Super Admin')) {
-             // If a regular user has no current school, but they have schools associated, 
-             // maybe auto-set the first one, or just abort. For safety, we abort if it's required.
-             // We can optionally auto-assign their first school to their current_school_id.
-             $firstSchool = $user->schools()->first();
-             if ($firstSchool && $firstSchool->is_active) {
+        } elseif ($user) {
+             // If a user has no current school, auto-assign one so they have a valid context.
+             // Super Admins get the first system school. Regular users get their first attached school.
+             $firstSchool = $user->hasRole('Super Admin') ? \App\Models\School::first() : $user->schools()->first();
+             
+             if ($firstSchool) {
                  $user->update(['current_school_id' => $firstSchool->id]);
                  Tenant::setSchool($firstSchool);
              } else {
-                 abort(403, 'No active school context found.');
+                 if (!$user->hasRole('Super Admin')) {
+                     abort(403, 'No active school context found.');
+                 }
              }
         }
 

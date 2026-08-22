@@ -1,45 +1,39 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ isset($class) ? __('Edit Class') : __('Create Class') }}
-        </h2>
+        <div class="page-heading"><div class="page-heading-copy"><div><h1 class="h3 mb-1">{{ isset($class) ? __('Edit Class') : __('Create Class') }}</h1></div></div></div>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900 dark:text-gray-100">
-                    <form method="POST" action="{{ isset($class) ? route('academic.classes.update', $class) : route('academic.classes.store') }}">
-                        @csrf
-                        @if(isset($class))
-                            @method('PUT')
-                        @endif
+    <div class="panel mx-auto" style="max-width: 600px;">
+        <div class="panel-body p-3 p-lg-4">
+            <form method="POST" action="{{ isset($class) ? route('academic.classes.update', $class) : route('academic.classes.store') }}">
+                @csrf
+                @if(isset($class))
+                    @method('PUT')
+                @endif
 
-                        <!-- Name -->
-                        <div>
-                            <x-input-label for="name" :value="__('Name')" />
-                            <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name', $class->name ?? '')" required autofocus />
-                            <x-input-error :messages="$errors->get('name')" class="mt-2" />
-                        </div>
-
-                        <!-- Level -->
-                        <div class="mt-4">
-                            <x-input-label for="level" :value="__('Level (Numeric Order)')" />
-                            <x-text-input id="level" class="block mt-1 w-full" type="number" name="level" :value="old('level', $class->level ?? '')" />
-                            <x-input-error :messages="$errors->get('level')" class="mt-2" />
-                        </div>
-
-                        <div class="flex items-center justify-end mt-4">
-                            <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800 mr-4" href="{{ route('academic.classes.index') }}">
-                                {{ __('Cancel') }}
-                            </a>
-                            <x-primary-button class="ml-4">
-                                {{ isset($class) ? __('Update') : __('Create') }}
-                            </x-primary-button>
-                        </div>
-                    </form>
+                <div class="mb-3">
+                    <label for="name" class="form-label fw-medium">{{ __('Name') }}</label>
+                    <input id="name" type="text" class="form-control @error('name') is-invalid @enderror" name="name" value="{{ old('name', $class->name ?? '') }}" required autofocus>
+                    @error('name')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
-            </div>
+
+                <div class="mb-4">
+                    <label for="level" class="form-label fw-medium">{{ __('Level (Numeric Order)') }}</label>
+                    <input id="level" type="number" class="form-control @error('level') is-invalid @enderror" name="level" value="{{ old('level', $class->level ?? '') }}">
+                    @error('level')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{{ route('academic.classes.index') }}" class="btn btn-light border">Cancel</a>
+                    <button type="submit" class="btn btn-primary">
+                        {{ isset($class) ? __('Update') : __('Create') }}
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </x-app-layout>

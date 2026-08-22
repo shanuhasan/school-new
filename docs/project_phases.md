@@ -191,3 +191,13 @@ This document serves as a historical record of all development phases and the in
 > STOP after Phase 4.
 
 **Status:** Planned.
+ 
+ # #   P h a s e   6      A d m i n H M D   T h e m e   I n t e g r a t i o n  
+  
+ * * P r o m p t   G i v e n : * *  
+ >   A d m i n H M D      F r e e   B o o t s t r a p   5   A d m i n   &   D a s h b o a r d   T e m p l a t e  
+ >   y e   t h e m e   i n s t a l l   k r   k e   d o   i s k a   l i n k   y e   r h a  
+ >   h t t p s : / / t h e m e w a g o n . g i t h u b . i o / a d m i n h m d / h t m l /  
+  
+ * * S t a t u s : * *   P l a n n e d .  
+ 
