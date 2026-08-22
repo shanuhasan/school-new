@@ -157,4 +157,37 @@ This document serves as a historical record of all development phases and the in
 > Run all tests.
 > STOP after Phase 3.
 
+**Status:** Completed.
+- Implemented `TenantManager` and `EnsureTenantContext` middleware.
+- Scoped data access using `BelongsToSchool` trait and Policies.
+- Created `school_user` relationship and `current_school_id` tracker.
+- Verified tenant isolation with robust feature tests.
+
+---
+
+## Phase 4 — Academic Management
+
+**Prompt Given:**
+> Implement the academic foundation.
+> 
+> Modules
+> Create: Academic Sessions, Classes, Sections, Subjects, Class Subjects
+> Examples: Classes: Nursery, LKG, UKG, 1, 2, etc. Do not hardcode these.
+> 
+> Requirements
+> Every school must have independent academic data.
+> Implement: CRUD, Validation, Authorization, Search, Filters, Pagination, Soft deletes where appropriate, Proper indexes
+> 
+> Relationships
+> Implement clean Eloquent relationships.
+> Examples: School -> Academic Sessions, School -> Classes, Class -> Sections, School -> Subjects, Class -> Subjects
+> Do not duplicate data unnecessarily.
+> 
+> UI
+> Create clean responsive admin interfaces. Use reusable components.
+> 
+> Tests
+> Test CRUD, validation, authorization and tenant isolation.
+> STOP after Phase 4.
+
 **Status:** Planned.

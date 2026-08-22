@@ -17,4 +17,11 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext::class])->prefix('academic')->name('academic.')->group(function () {
+    Route::resource('sessions', \App\Http\Controllers\AcademicSessionController::class);
+    Route::resource('classes', \App\Http\Controllers\SchoolClassController::class);
+    Route::resource('sections', \App\Http\Controllers\SectionController::class);
+    Route::resource('subjects', \App\Http\Controllers\SubjectController::class);
+});
+
 require __DIR__.'/auth.php';
