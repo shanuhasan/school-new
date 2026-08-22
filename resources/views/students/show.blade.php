@@ -47,21 +47,21 @@
                     </div>
                     
                     <ul class="list-group list-group-flush text-start mt-4">
-                        <li class="list-group-item px-0 d-flex justify-content-between">
-                            <span class="text-muted">Gender</span>
-                            <span class="fw-medium">{{ ucfirst($student->gender) }}</span>
+                        <li class="list-group-item bg-transparent border-secondary px-0 d-flex justify-content-between">
+                            <span class="text-secondary">Gender</span>
+                            <span class="fw-medium text-light">{{ ucfirst($student->gender) }}</span>
                         </li>
-                        <li class="list-group-item px-0 d-flex justify-content-between">
-                            <span class="text-muted">DOB</span>
-                            <span class="fw-medium">{{ $student->date_of_birth->format('d M Y') }}</span>
+                        <li class="list-group-item bg-transparent border-secondary px-0 d-flex justify-content-between">
+                            <span class="text-secondary">DOB</span>
+                            <span class="fw-medium text-light">{{ $student->date_of_birth->format('d M Y') }}</span>
                         </li>
-                        <li class="list-group-item px-0 d-flex justify-content-between">
-                            <span class="text-muted">Blood Group</span>
-                            <span class="fw-medium">{{ $student->blood_group ?? '-' }}</span>
+                        <li class="list-group-item bg-transparent border-secondary px-0 d-flex justify-content-between">
+                            <span class="text-secondary">Blood Group</span>
+                            <span class="fw-medium text-light">{{ $student->blood_group ?? '-' }}</span>
                         </li>
-                        <li class="list-group-item px-0 d-flex justify-content-between">
-                            <span class="text-muted">Adm Date</span>
-                            <span class="fw-medium">{{ $student->admission_date->format('d M Y') }}</span>
+                        <li class="list-group-item bg-transparent border-secondary px-0 border-bottom-0 d-flex justify-content-between">
+                            <span class="text-secondary">Adm Date</span>
+                            <span class="fw-medium text-light">{{ $student->admission_date->format('d M Y') }}</span>
                         </li>
                     </ul>
                 </div>
@@ -72,18 +72,18 @@
         <div class="col-md-8 col-lg-9">
             <div class="panel">
                 <div class="panel-header border-bottom-0 pb-0 pt-3">
-                    <ul class="nav nav-tabs border-bottom" id="profileTabs" role="tablist">
+                    <ul class="nav nav-pills border-bottom border-secondary pb-3" id="profileTabs" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab">Information</button>
+                            <button class="nav-link active rounded-pill px-4" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab">Information</button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="guardians-tab" data-bs-toggle="tab" data-bs-target="#guardians" type="button" role="tab">Guardians</button>
+                            <button class="nav-link rounded-pill px-4" id="guardians-tab" data-bs-toggle="tab" data-bs-target="#guardians" type="button" role="tab">Guardians</button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="enrollments-tab" data-bs-toggle="tab" data-bs-target="#enrollments" type="button" role="tab">Enrollments</button>
+                            <button class="nav-link rounded-pill px-4" id="enrollments-tab" data-bs-toggle="tab" data-bs-target="#enrollments" type="button" role="tab">Enrollments</button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="documents-tab" data-bs-toggle="tab" data-bs-target="#documents" type="button" role="tab">Documents</button>
+                            <button class="nav-link rounded-pill px-4" id="documents-tab" data-bs-toggle="tab" data-bs-target="#documents" type="button" role="tab">Documents</button>
                         </li>
                     </ul>
                 </div>
@@ -92,26 +92,26 @@
                         
                         <!-- Information Tab -->
                         <div class="tab-pane fade show active" id="info" role="tabpanel">
-                            <h5 class="mb-3 text-primary">Contact Information</h5>
+                            <h5 class="mb-4 text-light fw-semibold border-bottom border-secondary pb-2">Contact Information</h5>
                             <div class="row mb-4">
-                                <div class="col-sm-3 text-muted">Phone</div>
-                                <div class="col-sm-9 fw-medium">{{ $student->phone ?? 'Not provided' }}</div>
+                                <div class="col-sm-3 text-secondary">Phone</div>
+                                <div class="col-sm-9 fw-medium text-light">{{ $student->phone ?? 'Not provided' }}</div>
                             </div>
                             <div class="row mb-4">
-                                <div class="col-sm-3 text-muted">Email</div>
-                                <div class="col-sm-9 fw-medium">{{ $student->email ?? 'Not provided' }}</div>
+                                <div class="col-sm-3 text-secondary">Email</div>
+                                <div class="col-sm-9 fw-medium text-light">{{ $student->email ?? 'Not provided' }}</div>
                             </div>
                             <div class="row mb-4">
-                                <div class="col-sm-3 text-muted">Address</div>
-                                <div class="col-sm-9 fw-medium">{{ $student->address ?? 'Not provided' }}</div>
+                                <div class="col-sm-3 text-secondary">Address</div>
+                                <div class="col-sm-9 fw-medium text-light">{{ $student->address ?? 'Not provided' }}</div>
                             </div>
                         </div>
 
                         <!-- Guardians Tab -->
                         <div class="tab-pane fade" id="guardians" role="tabpanel">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h5 class="mb-0 text-primary">Parents & Guardians</h5>
-                                <a href="{{ route('guardians.create', ['student_id' => $student->id]) }}" class="btn btn-sm btn-outline-primary">
+                            <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary pb-2">
+                                <h5 class="mb-0 text-light fw-semibold">Parents & Guardians</h5>
+                                <a href="{{ route('guardians.create', ['student_id' => $student->id]) }}" class="btn btn-sm btn-primary rounded-pill px-3">
                                     <i class="bi bi-plus-lg"></i> Add Guardian
                                 </a>
                             </div>
@@ -120,20 +120,18 @@
                                 <div class="row g-3">
                                     @foreach($student->guardians as $guardian)
                                         <div class="col-md-6">
-                                            <div class="card border border-light-subtle h-100">
-                                                <div class="card-body">
-                                                    <div class="d-flex justify-content-between mb-2">
-                                                        <h6 class="mb-0 fw-bold">{{ $guardian->full_name }}</h6>
-                                                        @if($guardian->pivot->is_emergency_contact)
-                                                            <span class="badge bg-danger">Emergency</span>
-                                                        @endif
-                                                    </div>
-                                                    <p class="text-primary small mb-2">{{ $guardian->pivot->relationship }}</p>
-                                                    <div class="small mb-1"><i class="bi bi-telephone text-muted me-2"></i> {{ $guardian->phone }}</div>
-                                                    @if($guardian->email)
-                                                        <div class="small mb-1"><i class="bi bi-envelope text-muted me-2"></i> {{ $guardian->email }}</div>
+                                            <div class="p-4 border border-secondary rounded h-100 bg-opacity-10 bg-white">
+                                                <div class="d-flex justify-content-between mb-3">
+                                                    <h6 class="mb-0 fw-bold text-light fs-5">{{ $guardian->full_name }}</h6>
+                                                    @if($guardian->pivot->is_emergency_contact)
+                                                        <span class="badge bg-danger rounded-pill">Emergency</span>
                                                     @endif
                                                 </div>
+                                                <p class="text-info small mb-3 fw-medium text-uppercase tracking-wider">{{ $guardian->pivot->relationship }}</p>
+                                                <div class="small mb-2 text-light"><i class="bi bi-telephone text-secondary me-2"></i> {{ $guardian->phone }}</div>
+                                                @if($guardian->email)
+                                                    <div class="small mb-1 text-light"><i class="bi bi-envelope text-secondary me-2"></i> {{ $guardian->email }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                     @endforeach
@@ -147,9 +145,9 @@
 
                         <!-- Enrollments Tab -->
                         <div class="tab-pane fade" id="enrollments" role="tabpanel">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h5 class="mb-0 text-primary">Enrollment History</h5>
-                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#enrollModal">
+                            <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary pb-2">
+                                <h5 class="mb-0 text-light fw-semibold">Enrollment History</h5>
+                                <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#enrollModal">
                                     <i class="bi bi-plus-lg"></i> New Enrollment
                                 </button>
                             </div>
@@ -203,9 +201,9 @@
 
                         <!-- Documents Tab -->
                         <div class="tab-pane fade" id="documents" role="tabpanel">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h5 class="mb-0 text-primary">Student Documents</h5>
-                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#documentModal">
+                            <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary pb-2">
+                                <h5 class="mb-0 text-light fw-semibold">Student Documents</h5>
+                                <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#documentModal">
                                     <i class="bi bi-upload"></i> Upload Document
                                 </button>
                             </div>

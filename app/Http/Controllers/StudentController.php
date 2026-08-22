@@ -9,9 +9,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use App\Facades\Tenant;
+use App\Traits\HandlesImageUploads;
 
 class StudentController extends Controller
 {
+    use HandlesImageUploads;
     /**
      * Display a listing of the resource.
      */
@@ -89,7 +91,7 @@ class StudentController extends Controller
         ]);
 
         if ($request->hasFile('photo')) {
-            $path = $request->file('photo')->store('students/photos', 'public');
+            $path = $this->uploadAndResizeImage($request->file('photo'), 'students/photos', 'public', 800, 800, 80);
             $validated['photo_path'] = $path;
         }
 
@@ -149,7 +151,7 @@ class StudentController extends Controller
             if ($student->photo_path) {
                 Storage::disk('public')->delete($student->photo_path);
             }
-            $path = $request->file('photo')->store('students/photos', 'public');
+            $path = $this->uploadAndResizeImage($request->file('photo'), 'students/photos', 'public', 800, 800, 80);
             $validated['photo_path'] = $path;
         }
 
