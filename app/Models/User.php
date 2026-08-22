@@ -26,6 +26,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'is_active',
         'last_login_at',
+        'current_school_id',
     ];
 
     /**
@@ -51,5 +52,15 @@ class User extends Authenticatable implements MustVerifyEmail
             'is_active' => 'boolean',
             'last_login_at' => 'datetime',
         ];
+    }
+
+    public function schools()
+    {
+        return $this->belongsToMany(School::class);
+    }
+
+    public function currentSchool()
+    {
+        return $this->belongsTo(School::class, 'current_school_id');
     }
 }
