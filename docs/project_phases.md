@@ -75,4 +75,43 @@ This document serves as a historical record of all development phases and the in
 > Run all tests. Fix every issue introduced.
 > STOP after Phase 1.
 
+**Status:** Completed.
+- Configured Laravel Breeze for authentication.
+- Added custom User model fields and inactive login handling.
+- Implemented `last_login_at` tracking via event listener.
+- Ran tests and validated all workflows.
+
+---
+
+## Phase 2 — Roles & Permissions
+
+**Prompt Given:**
+> Continue the existing project.
+> Implement a production-ready authorization system.
+> 
+> Roles
+> Prepare these roles: Super Admin, School Admin, Principal, Teacher, Accountant, Librarian, Transport Manager, Staff, Student, Parent.
+> Architecture must allow additional roles later.
+> 
+> Permissions
+> Use granular permissions such as:
+> Students: students.view, students.create, students.update, students.delete
+> Attendance: attendance.view, attendance.create, attendance.update
+> Fees: fees.view, fees.create, fees.update, fees.collect, fees.refund
+> Exams: exams.view, exams.create, exams.update, marks.enter, results.publish
+> Apply the same pattern to other modules.
+> 
+> Authorization
+> Use: Policies, Gates, Middleware where appropriate.
+> Never rely only on frontend visibility. Every sensitive action must be authorized server-side.
+> 
+> Database
+> Create appropriate: roles, permissions, role_permission relationships, user_role relationships.
+> Use migrations and seeders. Create default roles and permissions.
+> 
+> Tests
+> Test: Allowed actions, Forbidden actions, Role assignment, Permission checking, Unauthorized access.
+> Run complete test suite.
+> STOP after Phase 2.
+
 **Status:** Planned.

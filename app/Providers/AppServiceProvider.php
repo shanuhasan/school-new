@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Auth\Events\Login;
 use App\Listeners\UpdateLastLoginInfo;
 
@@ -26,5 +27,9 @@ class AppServiceProvider extends ServiceProvider
             Login::class,
             UpdateLastLoginInfo::class,
         );
+
+        Gate::before(function ($user, $ability) {
+            return $user->hasRole('Super Admin') ? true : null;
+        });
     }
 }
