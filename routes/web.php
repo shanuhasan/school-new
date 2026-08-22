@@ -27,4 +27,19 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext:
     Route::resource('subjects', \App\Http\Controllers\SubjectController::class);
 });
 
+Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext::class])->group(function () {
+    Route::resource('students', \App\Http\Controllers\StudentController::class);
+    Route::resource('guardians', \App\Http\Controllers\GuardianController::class);
+    
+    // Enrollments
+    Route::post('students/{student}/enrollments', [\App\Http\Controllers\EnrollmentController::class, 'store'])->name('students.enrollments.store');
+    Route::put('students/{student}/enrollments/{enrollment}', [\App\Http\Controllers\EnrollmentController::class, 'update'])->name('students.enrollments.update');
+    Route::delete('students/{student}/enrollments/{enrollment}', [\App\Http\Controllers\EnrollmentController::class, 'destroy'])->name('students.enrollments.destroy');
+
+    // Documents
+    Route::post('students/{student}/documents', [\App\Http\Controllers\StudentDocumentController::class, 'store'])->name('students.documents.store');
+    Route::get('documents/{document}/download', [\App\Http\Controllers\StudentDocumentController::class, 'download'])->name('documents.download');
+    Route::delete('documents/{document}', [\App\Http\Controllers\StudentDocumentController::class, 'destroy'])->name('documents.destroy');
+});
+
 require __DIR__.'/auth.php';

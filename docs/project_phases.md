@@ -20,6 +20,7 @@ This document serves as a historical record of all development phases and the in
 >
 > Engineering Rules
 > Follow: Laravel conventions, PSR-12, SOLID where appropriate, DRY, Dependency Injection, Form Requests, Policies/Gates, Services/Actions for complex business logic, Database transactions, Proper indexes, Foreign keys, Secure validation, Secure file handling, Automated tests.
+> UI Rules: Every new view MUST strictly match the exact HTML/CSS structure (panels, panel-headers, page-headings) of the AdminHMD theme as seen in the academic modules.
 > Avoid: Massive controllers, Duplicate logic, Hardcoded credentials, Unnecessary packages, Unnecessary repositories, Business logic inside Blade, Trusting client-side authorization.
 >
 > Folder Preparation

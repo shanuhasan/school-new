@@ -8,6 +8,19 @@ use Illuminate\Database\Eloquent\Builder;
 trait BelongsToSchool
 {
     /**
+     * Boot the trait to add a global scope for the current school.
+     */
+    protected static function bootBelongsToSchool()
+    {
+        static::addGlobalScope('school', function (Builder $builder) {
+            $schoolId = Tenant::getSchoolId();
+            if ($schoolId) {
+                $builder->where('school_id', $schoolId);
+            }
+        });
+    }
+
+    /**
      * Scope a query to only include records of the current school.
      */
     public function scopeForCurrentSchool(Builder $query): Builder

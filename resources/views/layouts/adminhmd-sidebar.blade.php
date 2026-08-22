@@ -37,6 +37,22 @@
         </ul>
       </div>
     </div>
+    <div class="nav-item">
+      <a class="nav-link {{ request()->routeIs('students.*') || request()->routeIs('guardians.*') ? '' : 'collapsed' }}" href="#studentsSubmenu" data-bs-toggle="collapse" role="button" aria-expanded="{{ request()->routeIs('students.*') || request()->routeIs('guardians.*') ? 'true' : 'false' }}" aria-controls="studentsSubmenu">
+        <span class="nav-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
+        <span class="nav-text">Students</span>
+      </a>
+      <div class="collapse {{ request()->routeIs('students.*') || request()->routeIs('guardians.*') ? 'show' : '' }}" id="studentsSubmenu">
+        <ul class="nav flex-column sub-nav">
+          <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('students.*') ? 'active' : '' }}" href="{{ route('students.index') }}">All Students</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('guardians.*') ? 'active' : '' }}" href="{{ route('guardians.index') }}">Guardians</a>
+          </li>
+        </ul>
+      </div>
+    </div>
   </nav>
 
   <div class="sidebar-user">

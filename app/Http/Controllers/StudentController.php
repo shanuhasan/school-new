@@ -1,0 +1,175 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Student;
+use App\Models\AcademicSession;
+use App\Models\SchoolClass;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+use App\Facades\Tenant;
+
+class StudentController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request)
+    {
+        $query = Student::query();
+
+        // Search by admission number, name, phone
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('admission_number', 'like', "%{$search}%")
+                  ->orWhere('first_name', 'like', "%{$search}%")
+                  ->orWhere('last_name', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter by class (via enrollments)
+        if ($request->filled('class_id')) {
+            $query->whereHas('enrollments', function ($q) use ($request) {
+                $q->where('school_class_id', $request->class_id);
+                if ($request->filled('section_id')) {
+                    $q->where('section_id', $request->section_id);
+                }
+                if ($request->filled('session_id')) {
+                    $q->where('academic_session_id', $request->session_id);
+                }
+            });
+        }
+
+        // Filter by status
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $students = $query->latest()->paginate(15)->withQueryString();
+        
+        $classes = SchoolClass::all();
+        $sessions = AcademicSession::all();
+
+        return view('students.index', compact('students', 'classes', 'sessions'));
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        return view('students.create');
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'admission_number' => [
+                'required',
+                'string',
+                Rule::unique('students')->where('school_id', Tenant::getSchoolId()),
+            ],
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'date_of_birth' => 'required|date',
+            'gender' => 'required|in:male,female,other',
+            'phone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'address' => 'nullable|string',
+            'blood_group' => 'nullable|string|max:10',
+            'admission_date' => 'required|date',
+            'status' => 'required|in:active,inactive',
+            'photo' => 'nullable|image|max:2048',
+        ]);
+
+        if ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store('students/photos', 'public');
+            $validated['photo_path'] = $path;
+        }
+
+        $validated['school_id'] = Tenant::getSchoolId();
+
+        $student = Student::create($validated);
+
+        return redirect()->route('students.show', $student)->with('success', 'Student created successfully.');
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(Student $student)
+    {
+        abort_if($student->school_id !== Tenant::getSchoolId(), 404);
+        $student->load(['guardians', 'enrollments.academicSession', 'enrollments.schoolClass', 'enrollments.section', 'documents']);
+        return view('students.show', compact('student'));
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(Student $student)
+    {
+        abort_if($student->school_id !== Tenant::getSchoolId(), 404);
+        return view('students.edit', compact('student'));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, Student $student)
+    {
+        abort_if($student->school_id !== Tenant::getSchoolId(), 404);
+        
+        $validated = $request->validate([
+            'admission_number' => [
+                'required',
+                'string',
+                Rule::unique('students')->where('school_id', Tenant::getSchoolId())->ignore($student->id),
+            ],
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'date_of_birth' => 'required|date',
+            'gender' => 'required|in:male,female,other',
+            'phone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'address' => 'nullable|string',
+            'blood_group' => 'nullable|string|max:10',
+            'admission_date' => 'required|date',
+            'status' => 'required|in:active,inactive,graduated,transferred,suspended',
+            'photo' => 'nullable|image|max:2048',
+        ]);
+
+        if ($request->hasFile('photo')) {
+            if ($student->photo_path) {
+                Storage::disk('public')->delete($student->photo_path);
+            }
+            $path = $request->file('photo')->store('students/photos', 'public');
+            $validated['photo_path'] = $path;
+        }
+
+        $student->update($validated);
+
+        return redirect()->route('students.show', $student)->with('success', 'Student updated successfully.');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Student $student)
+    {
+        abort_if($student->school_id !== Tenant::getSchoolId(), 404);
+        
+        if ($student->photo_path) {
+            Storage::disk('public')->delete($student->photo_path);
+        }
+        $student->delete();
+
+        return redirect()->route('students.index')->with('success', 'Student deleted successfully.');
+    }
+}
