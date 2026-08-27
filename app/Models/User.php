@@ -73,4 +73,27 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasOne(Staff::class);
     }
+
+    public function studentProfile()
+    {
+        return $this->hasOne(Student::class, 'user_id');
+    }
+
+    public function guardianProfile()
+    {
+        return $this->hasOne(Guardian::class, 'user_id');
+    }
+    
+    public function children()
+    {
+        // A user can be a Guardian. A Guardian has many Students. Each Student has a User.
+        // Return a query builder or collection of Users who are students of this guardian.
+        $guardian = $this->guardianProfile;
+        if ($guardian) {
+            $studentIds = $guardian->students()->pluck('user_id')->filter();
+            return User::whereIn('id', $studentIds);
+        }
+        
+        return User::whereRaw('1 = 0'); // Empty query
+    }
 }

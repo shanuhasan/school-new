@@ -23,6 +23,7 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext::class])->prefix('academic')->name('academic.')->group(function () {
     Route::resource('sessions', \App\Http\Controllers\AcademicSessionController::class);
     Route::resource('classes', \App\Http\Controllers\SchoolClassController::class);
+    Route::get('classes/{class}/sections', [\App\Http\Controllers\SchoolClassController::class, 'getSections'])->name('classes.sections');
     Route::resource('sections', \App\Http\Controllers\SectionController::class);
     Route::resource('subjects', \App\Http\Controllers\SubjectController::class);
     
@@ -36,6 +37,15 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext:
     Route::get('timetables/manage', [\App\Http\Controllers\Academic\TimetableController::class, 'manage'])->name('timetables.manage');
     Route::post('timetables', [\App\Http\Controllers\Academic\TimetableController::class, 'store'])->name('timetables.store');
     Route::delete('timetables/{timetable}', [\App\Http\Controllers\Academic\TimetableController::class, 'destroy'])->name('timetables.destroy');
+    
+    // Homework
+    Route::resource('homework', \App\Http\Controllers\Academic\HomeworkController::class);
+    Route::get('homework/{homework}/download', [\App\Http\Controllers\Academic\HomeworkController::class, 'downloadAttachment'])->name('homework.download');
+    
+    // Homework Submissions
+    Route::post('homework/{homework}/submissions', [\App\Http\Controllers\Academic\HomeworkSubmissionController::class, 'store'])->name('homework.submissions.store');
+    Route::patch('submissions/{submission}/evaluate', [\App\Http\Controllers\Academic\HomeworkSubmissionController::class, 'evaluate'])->name('homework.submissions.evaluate');
+    Route::get('submissions/{submission}/download', [\App\Http\Controllers\Academic\HomeworkSubmissionController::class, 'downloadAttachment'])->name('homework.submissions.download');
 });
 
 Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext::class])->prefix('reports')->name('reports.')->group(function () {

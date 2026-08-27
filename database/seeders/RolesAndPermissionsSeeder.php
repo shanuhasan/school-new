@@ -22,6 +22,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'students.view', 'students.create', 'students.update', 'students.delete',
             'attendance.view', 'attendance.create', 'attendance.update', 'attendance.manage', 'attendance.view_reports',
             'timetable.view', 'timetable.manage',
+            'homework.view', 'homework.manage', 'homework.submit',
             'fees.view', 'fees.create', 'fees.update', 'fees.collect', 'fees.refund',
             'exams.view', 'exams.create', 'exams.update', 'marks.enter', 'results.publish',
             'academic.manage',
@@ -51,7 +52,18 @@ class RolesAndPermissionsSeeder extends Seeder
             'students.view',
             'attendance.view', 'attendance.create', 'attendance.update', 'attendance.view_reports',
             'timetable.view',
+            'homework.view', 'homework.manage',
             'exams.view', 'marks.enter'
+        ]);
+
+        $student->syncPermissions([
+            'timetable.view',
+            'homework.view', 'homework.submit',
+        ]);
+
+        $parent->syncPermissions([
+            'timetable.view',
+            'homework.view',
         ]);
 
         // Accountant

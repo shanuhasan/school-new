@@ -37,6 +37,10 @@
           <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('academic.attendance.*') ? 'active' : '' }}" href="{{ route('academic.attendance.index') }}">Attendance</a>
           </li>
+
+          <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('academic.homework.*') ? 'active' : '' }}" href="{{ route('academic.homework.index') }}">Homework</a>
+          </li> 
         </ul>
       </div>
     </div>

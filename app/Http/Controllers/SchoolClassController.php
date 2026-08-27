@@ -80,4 +80,13 @@ class SchoolClassController extends Controller
         $class->delete();
         return redirect()->route('academic.classes.index')->with('success', 'Class deleted successfully.');
     }
+
+    public function getSections(SchoolClass $class)
+    {
+        // No authorization for basic dropdown fetching, or authorize viewAny
+        if ($class->school_id !== \App\Facades\Tenant::getSchoolId()) {
+            return response()->json([], 403);
+        }
+        return response()->json($class->sections()->select('id', 'name')->get());
+    }
 }
