@@ -34,6 +34,9 @@
           <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('academic.subjects.*') ? 'active' : '' }}" href="{{ route('academic.subjects.index') }}">Subjects</a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('academic.attendance.*') ? 'active' : '' }}" href="{{ route('academic.attendance.index') }}">Attendance</a>
+          </li>
         </ul>
       </div>
     </div>
@@ -72,6 +75,25 @@
           </li>
           <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('staff.designations.*') ? 'active' : '' }}" href="{{ route('staff.designations.index') }}">Designations</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div class="nav-item">
+      <a class="nav-link {{ request()->routeIs('reports.*') ? '' : 'collapsed' }}" href="#reportsSubmenu" data-bs-toggle="collapse" role="button" aria-expanded="{{ request()->routeIs('reports.*') ? 'true' : 'false' }}" aria-controls="reportsSubmenu">
+        <span class="nav-icon"><i class="bi bi-bar-chart" aria-hidden="true"></i></span>
+        <span class="nav-text">Reports</span>
+      </a>
+      <div class="collapse {{ request()->routeIs('reports.*') ? 'show' : '' }}" id="reportsSubmenu">
+        <ul class="nav flex-column sub-nav">
+          <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('reports.attendance.daily') ? 'active' : '' }}" href="{{ route('reports.attendance.daily') }}">Daily Attendance</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('reports.attendance.monthly') ? 'active' : '' }}" href="{{ route('reports.attendance.monthly') }}">Monthly Attendance</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('reports.attendance.student') ? 'active' : '' }}" href="{{ route('reports.attendance.student') }}">Student Attendance</a>
           </li>
         </ul>
       </div>

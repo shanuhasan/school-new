@@ -25,6 +25,17 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext:
     Route::resource('classes', \App\Http\Controllers\SchoolClassController::class);
     Route::resource('sections', \App\Http\Controllers\SectionController::class);
     Route::resource('subjects', \App\Http\Controllers\SubjectController::class);
+    
+    // Attendance
+    Route::get('attendance', [\App\Http\Controllers\Academic\AttendanceController::class, 'index'])->name('attendance.index');
+    Route::get('attendance/mark', [\App\Http\Controllers\Academic\AttendanceController::class, 'mark'])->name('attendance.mark');
+    Route::post('attendance', [\App\Http\Controllers\Academic\AttendanceController::class, 'store'])->name('attendance.store');
+});
+
+Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext::class])->prefix('reports')->name('reports.')->group(function () {
+    Route::get('attendance/daily', [\App\Http\Controllers\Report\AttendanceReportController::class, 'daily'])->name('attendance.daily');
+    Route::get('attendance/monthly', [\App\Http\Controllers\Report\AttendanceReportController::class, 'monthly'])->name('attendance.monthly');
+    Route::get('attendance/student', [\App\Http\Controllers\Report\AttendanceReportController::class, 'student'])->name('attendance.student');
 });
 
 Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext::class])->prefix('staff')->name('staff.')->group(function () {

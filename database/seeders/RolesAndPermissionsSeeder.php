@@ -20,7 +20,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // Define permissions
         $permissions = [
             'students.view', 'students.create', 'students.update', 'students.delete',
-            'attendance.view', 'attendance.create', 'attendance.update',
+            'attendance.view', 'attendance.create', 'attendance.update', 'attendance.manage', 'attendance.view_reports',
             'fees.view', 'fees.create', 'fees.update', 'fees.collect', 'fees.refund',
             'exams.view', 'exams.create', 'exams.update', 'marks.enter', 'results.publish',
             'academic.manage',
@@ -48,7 +48,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // Teacher
         $teacher->syncPermissions([
             'students.view',
-            'attendance.view', 'attendance.create', 'attendance.update',
+            'attendance.view', 'attendance.create', 'attendance.update', 'attendance.view_reports',
             'exams.view', 'marks.enter'
         ]);
 
