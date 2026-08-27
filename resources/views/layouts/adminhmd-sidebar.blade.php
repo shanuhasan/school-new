@@ -16,11 +16,11 @@
     </a>
     
     <div class="nav-item">
-      <a class="nav-link {{ request()->routeIs('academic.*') ? '' : 'collapsed' }}" href="#academicSubmenu" data-bs-toggle="collapse" role="button" aria-expanded="{{ request()->routeIs('academic.*') ? 'true' : 'false' }}" aria-controls="academicSubmenu">
+      <a class="nav-link {{ request()->routeIs(['academic.sessions.*', 'academic.classes.*', 'academic.sections.*', 'academic.subjects.*', 'academic.attendance.*', 'academic.homework.*', 'academic.timetable.*']) ? '' : 'collapsed' }}" href="#academicSubmenu" data-bs-toggle="collapse" role="button" aria-expanded="{{ request()->routeIs(['academic.sessions.*', 'academic.classes.*', 'academic.sections.*', 'academic.subjects.*', 'academic.attendance.*', 'academic.homework.*', 'academic.timetable.*']) ? 'true' : 'false' }}" aria-controls="academicSubmenu">
         <span class="nav-icon"><i class="bi bi-book" aria-hidden="true"></i></span>
         <span class="nav-text">Academic</span>
       </a>
-      <div class="collapse {{ request()->routeIs('academic.*') ? 'show' : '' }}" id="academicSubmenu">
+      <div class="collapse {{ request()->routeIs(['academic.sessions.*', 'academic.classes.*', 'academic.sections.*', 'academic.subjects.*', 'academic.attendance.*', 'academic.homework.*', 'academic.timetable.*']) ? 'show' : '' }}" id="academicSubmenu">
         <ul class="nav flex-column sub-nav">
           <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('academic.sessions.*') ? 'active' : '' }}" href="{{ route('academic.sessions.index') }}">Sessions</a>
@@ -79,6 +79,31 @@
           </li>
           <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('staff.designations.*') ? 'active' : '' }}" href="{{ route('staff.designations.index') }}">Designations</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div class="nav-item">
+      <a class="nav-link {{ request()->routeIs('academic.exam-types.*') || request()->routeIs('academic.exams.*') || request()->routeIs('academic.grades.*') || request()->routeIs('academic.marks.*') || request()->routeIs('academic.results.*') ? '' : 'collapsed' }}" href="#examsSubmenu" data-bs-toggle="collapse" role="button" aria-expanded="{{ request()->routeIs('academic.exam*') || request()->routeIs('academic.marks.*') || request()->routeIs('academic.results.*') ? 'true' : 'false' }}" aria-controls="examsSubmenu">
+        <span class="nav-icon"><i class="bi bi-journal-check" aria-hidden="true"></i></span>
+        <span class="nav-text">Examinations</span>
+      </a>
+      <div class="collapse {{ request()->routeIs('academic.exam-types.*') || request()->routeIs('academic.exams.*') || request()->routeIs('academic.grades.*') || request()->routeIs('academic.marks.*') || request()->routeIs('academic.results.*') ? 'show' : '' }}" id="examsSubmenu">
+        <ul class="nav flex-column sub-nav">
+          <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('academic.exams.*') ? 'active' : '' }}" href="{{ route('academic.exams.index') }}">Manage Exams</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('academic.marks.*') ? 'active' : '' }}" href="{{ route('academic.marks.index') }}">Marks Entry</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('academic.results.*') ? 'active' : '' }}" href="{{ route('academic.results.index') }}">Results</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('academic.grades.*') ? 'active' : '' }}" href="{{ route('academic.grades.index') }}">Grades Setup</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('academic.exam-types.*') ? 'active' : '' }}" href="{{ route('academic.exam-types.index') }}">Exam Types</a>
           </li>
         </ul>
       </div>

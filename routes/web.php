@@ -46,6 +46,22 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext:
     Route::post('homework/{homework}/submissions', [\App\Http\Controllers\Academic\HomeworkSubmissionController::class, 'store'])->name('homework.submissions.store');
     Route::patch('submissions/{submission}/evaluate', [\App\Http\Controllers\Academic\HomeworkSubmissionController::class, 'evaluate'])->name('homework.submissions.evaluate');
     Route::get('submissions/{submission}/download', [\App\Http\Controllers\Academic\HomeworkSubmissionController::class, 'downloadAttachment'])->name('homework.submissions.download');
+    
+    // Examinations
+    Route::resource('exam-types', \App\Http\Controllers\Academic\ExamTypeController::class)->except(['create', 'show', 'edit', 'update']);
+    Route::resource('grades', \App\Http\Controllers\Academic\GradeController::class)->except(['create', 'show', 'edit', 'update']);
+    Route::resource('exams', \App\Http\Controllers\Academic\ExamController::class);
+    Route::post('exams/{exam}/subjects', [\App\Http\Controllers\Academic\ExamController::class, 'assignSubject'])->name('exams.subjects.assign');
+    Route::delete('exam-subjects/{examSubject}', [\App\Http\Controllers\Academic\ExamController::class, 'destroySubject'])->name('exams.subjects.destroy');
+    
+    // Marks Entry
+    Route::get('marks', [\App\Http\Controllers\Academic\MarksController::class, 'index'])->name('marks.index');
+    Route::post('marks', [\App\Http\Controllers\Academic\MarksController::class, 'store'])->name('marks.store');
+    
+    // Results
+    Route::get('results', [\App\Http\Controllers\Academic\ResultController::class, 'index'])->name('results.index');
+    Route::post('results/process', [\App\Http\Controllers\Academic\ResultController::class, 'process'])->name('results.process');
+    Route::post('results/publish', [\App\Http\Controllers\Academic\ResultController::class, 'publish'])->name('results.publish');
 });
 
 Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext::class])->prefix('reports')->name('reports.')->group(function () {
