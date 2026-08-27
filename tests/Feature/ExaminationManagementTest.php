@@ -167,7 +167,7 @@ class ExaminationManagementTest extends TestCase
             ->post('/academic/marks', [
                 'exam_subject_id' => $examSubject->id,
                 'marks' => [
-                    $studentUser->id => [
+                    $studentProfile->id => [
                         'obtained' => 85,
                         'is_absent' => false,
                         'remarks' => 'Good'
@@ -177,7 +177,7 @@ class ExaminationManagementTest extends TestCase
 
         $response->assertStatus(302);
         $this->assertDatabaseHas('marks', [
-            'student_id' => $studentUser->id,
+            'student_id' => $studentProfile->id,
             'marks_obtained' => 85
         ]);
     }

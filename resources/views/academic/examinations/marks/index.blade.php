@@ -78,8 +78,8 @@
                                                 </div>
                                             </div>
                                             <div>
-                                                <h6 class="mb-0">{{ $student->name }}</h6>
-                                                <small class="text-muted">{{ $student->studentProfile->admission_number ?? '' }}</small>
+                                                <h6 class="mb-0">{{ $student->full_name }}</h6>
+                                                <small class="text-muted">{{ $student->admission_number }}</small>
                                             </div>
                                         </div>
                                     </td>

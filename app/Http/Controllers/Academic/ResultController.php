@@ -10,6 +10,7 @@ use App\Models\Grade;
 use App\Models\Result;
 use App\Models\Mark;
 use App\Models\ExamSubject;
+use App\Models\Student;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -33,7 +34,7 @@ class ResultController extends Controller
         $results = [];
 
         if ($request->filled(['exam_id', 'school_class_id', 'section_id'])) {
-            $results = Result::with(['student.studentProfile', 'grade'])
+            $results = Result::with(['student', 'grade'])
                 ->where('exam_id', $request->exam_id)
                 ->where('school_class_id', $request->school_class_id)
                 ->where('section_id', $request->section_id)
@@ -72,8 +73,7 @@ class ResultController extends Controller
         }
 
         // Get students in class/section
-        $students = User::role('Student')
-            ->whereHas('studentProfile.enrollments', function($q) use ($sessionId, $validated) {
+        $students = Student::whereHas('enrollments', function($q) use ($sessionId, $validated) {
                 $q->where('academic_session_id', $sessionId)
                   ->where('school_class_id', $validated['school_class_id']);
                 if (isset($validated['section_id'])) {

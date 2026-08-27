@@ -83,7 +83,7 @@
                         <tbody>
                             @foreach($results as $res)
                                 <tr>
-                                    <td>{{ $res->student->name }}</td>
+                                    <td>{{ $res->student->full_name }}</td>
                                     <td>{{ $res->total_obtained_marks }} / {{ $res->total_max_marks }}</td>
                                     <td>{{ $res->percentage }}%</td>
                                     <td><strong>{{ $res->grade->name ?? 'N/A' }}</strong></td>

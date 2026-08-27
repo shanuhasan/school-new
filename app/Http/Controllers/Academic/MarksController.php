@@ -7,6 +7,7 @@ use App\Models\Exam;
 use App\Models\ExamSubject;
 use App\Models\Mark;
 use App\Models\SchoolClass;
+use App\Models\Student;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -47,16 +48,14 @@ class MarksController extends Controller
             // Get all students enrolled in this class and section
             $sessionId = \App\Models\AcademicSession::where('is_current', true)->where('school_id', $schoolId)->value('id');
             
-            $students = User::role('Student')
-                ->whereHas('studentProfile.enrollments', function($q) use ($sessionId, $request) {
+            $students = Student::whereHas('enrollments', function($q) use ($sessionId, $request) {
                     $q->where('academic_session_id', $sessionId)
                       ->where('school_class_id', $request->school_class_id);
                     if ($request->filled('section_id')) {
                         $q->where('section_id', $request->section_id);
                     }
                 })
-                ->with('studentProfile')
-                ->orderBy('name')
+                ->orderBy('first_name')
                 ->get();
 
             $existingMarks = Mark::where('exam_subject_id', $examSubject->id)
