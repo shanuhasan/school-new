@@ -98,6 +98,24 @@
         </ul>
       </div>
     </div>
+    <div class="nav-item">
+      <a class="nav-link {{ request()->routeIs('academic.timetables.*') || request()->routeIs('staff.timetables.*') ? '' : 'collapsed' }}" href="#timetableSubmenu" data-bs-toggle="collapse" role="button" aria-expanded="{{ request()->routeIs('academic.timetables.*') || request()->routeIs('staff.timetables.*') ? 'true' : 'false' }}" aria-controls="timetableSubmenu">
+        <span class="nav-icon"><i class="bi bi-calendar-week" aria-hidden="true"></i></span>
+        <span class="nav-text">Timetable</span>
+      </a>
+      <div class="collapse {{ request()->routeIs('academic.timetables.*') || request()->routeIs('staff.timetables.*') ? 'show' : '' }}" id="timetableSubmenu">
+        <ul class="nav flex-column sub-nav">
+          <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('academic.timetables.index') ? 'active' : '' }}" href="{{ route('academic.timetables.index') }}">Manage Timetable</a>
+          </li>
+          @role('Teacher')
+          <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('staff.timetables.teacher') ? 'active' : '' }}" href="{{ route('staff.timetables.teacher') }}">My Timetable</a>
+          </li>
+          @endrole
+        </ul>
+      </div>
+    </div>
   </nav>
 
   <div class="sidebar-user">

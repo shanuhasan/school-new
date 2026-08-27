@@ -30,6 +30,12 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext:
     Route::get('attendance', [\App\Http\Controllers\Academic\AttendanceController::class, 'index'])->name('attendance.index');
     Route::get('attendance/mark', [\App\Http\Controllers\Academic\AttendanceController::class, 'mark'])->name('attendance.mark');
     Route::post('attendance', [\App\Http\Controllers\Academic\AttendanceController::class, 'store'])->name('attendance.store');
+
+    // Timetables
+    Route::get('timetables', [\App\Http\Controllers\Academic\TimetableController::class, 'index'])->name('timetables.index');
+    Route::get('timetables/manage', [\App\Http\Controllers\Academic\TimetableController::class, 'manage'])->name('timetables.manage');
+    Route::post('timetables', [\App\Http\Controllers\Academic\TimetableController::class, 'store'])->name('timetables.store');
+    Route::delete('timetables/{timetable}', [\App\Http\Controllers\Academic\TimetableController::class, 'destroy'])->name('timetables.destroy');
 });
 
 Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext::class])->prefix('reports')->name('reports.')->group(function () {
@@ -43,6 +49,9 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext:
     Route::resource('designations', \App\Http\Controllers\DesignationController::class)->except(['show']);
     Route::resource('teachers', \App\Http\Controllers\TeacherController::class);
     Route::resource('staffs', \App\Http\Controllers\StaffController::class);
+    
+    // Teacher Timetable
+    Route::get('my-timetable', [\App\Http\Controllers\Staff\TeacherTimetableController::class, 'index'])->name('timetables.teacher');
 });
 
 Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext::class])->group(function () {
