@@ -27,6 +27,13 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext:
     Route::resource('subjects', \App\Http\Controllers\SubjectController::class);
 });
 
+Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext::class])->prefix('staff')->name('staff.')->group(function () {
+    Route::resource('departments', \App\Http\Controllers\DepartmentController::class)->except(['show']);
+    Route::resource('designations', \App\Http\Controllers\DesignationController::class)->except(['show']);
+    Route::resource('teachers', \App\Http\Controllers\TeacherController::class);
+    Route::resource('staffs', \App\Http\Controllers\StaffController::class);
+});
+
 Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext::class])->group(function () {
     Route::resource('students', \App\Http\Controllers\StudentController::class);
     Route::resource('guardians', \App\Http\Controllers\GuardianController::class);

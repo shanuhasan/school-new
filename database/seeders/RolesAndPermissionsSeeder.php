@@ -24,6 +24,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'fees.view', 'fees.create', 'fees.update', 'fees.collect', 'fees.refund',
             'exams.view', 'exams.create', 'exams.update', 'marks.enter', 'results.publish',
             'academic.manage',
+            'staff.manage',
         ];
 
         // Create permissions

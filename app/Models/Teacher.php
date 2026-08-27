@@ -1,0 +1,52 @@
+<?php
+
+namespace App\Models;
+
+use App\Models\Traits\BelongsToSchool;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Teacher extends Model
+{
+    use HasFactory, BelongsToSchool;
+
+    protected $fillable = [
+        'school_id',
+        'user_id',
+        'department_id',
+        'designation_id',
+        'employee_id',
+        'joining_date',
+        'qualification',
+        'status',
+    ];
+
+    protected $casts = [
+        'joining_date' => 'date',
+    ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function designation()
+    {
+        return $this->belongsTo(Designation::class);
+    }
+
+    public function subjects()
+    {
+        return $this->belongsToMany(Subject::class, 'teacher_subject')->withTimestamps();
+    }
+
+    public function classes()
+    {
+        return $this->belongsToMany(SchoolClass::class, 'teacher_school_class')->withTimestamps();
+    }
+}

@@ -53,6 +53,29 @@
         </ul>
       </div>
     </div>
+    
+    <div class="nav-item">
+      <a class="nav-link {{ request()->routeIs('staff.*') ? '' : 'collapsed' }}" href="#staffSubmenu" data-bs-toggle="collapse" role="button" aria-expanded="{{ request()->routeIs('staff.*') ? 'true' : 'false' }}" aria-controls="staffSubmenu">
+        <span class="nav-icon"><i class="bi bi-person-badge" aria-hidden="true"></i></span>
+        <span class="nav-text">Staff & Teachers</span>
+      </a>
+      <div class="collapse {{ request()->routeIs('staff.*') ? 'show' : '' }}" id="staffSubmenu">
+        <ul class="nav flex-column sub-nav">
+          <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('staff.teachers.*') ? 'active' : '' }}" href="{{ route('staff.teachers.index') }}">Teachers</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('staff.staffs.*') ? 'active' : '' }}" href="{{ route('staff.staffs.index') }}">General Staff</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('staff.departments.*') ? 'active' : '' }}" href="{{ route('staff.departments.index') }}">Departments</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('staff.designations.*') ? 'active' : '' }}" href="{{ route('staff.designations.index') }}">Designations</a>
+          </li>
+        </ul>
+      </div>
+    </div>
   </nav>
 
   <div class="sidebar-user">
