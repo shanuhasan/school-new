@@ -23,20 +23,10 @@ class TeacherController extends Controller
     {
         $this->authorize('viewAny', Teacher::class);
 
-        $query = Teacher::forCurrentSchool()->with(['user', 'department', 'designation']);
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->whereHas('user', function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%");
-            })->orWhere('employee_id', 'like', "%{$search}%");
-        }
-
-        if ($request->filled('department_id')) {
-            $query->where('department_id', $request->department_id);
-        }
+        // Same filters are used by the Excel export (TeacherExportController)
+        $query = Teacher::forCurrentSchool()
+            ->with(['user', 'department', 'designation'])
+            ->filter($request->only(['search', 'department_id']));
 
         $teachers = $query->paginate(10)->withQueryString();
         $departments = Department::forCurrentSchool()->get();

@@ -580,7 +580,7 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 { color: var(--ink); font-w
 .table td .btn-sm.btn-text { width: auto; padding: 0 0.65rem; }
 .table td .btn-sm:hover { border-color: var(--line-strong); background: var(--surface-2); }
 .table td .btn-sm.btn-primary:hover, .table td .btn-sm.btn-outline-primary:hover { color: var(--brand) !important; border-color: var(--brand); background: var(--brand-soft); }
-.table td .btn-sm.btn-info:hover { color: var(--info) !important; border-color: var(--info); background: var(--info-soft); }
+.table td .btn-sm.btn-info:hover, .table td .btn-sm.btn-outline-info:hover { color: var(--info) !important; border-color: var(--info); background: var(--info-soft); }
 .table td .btn-sm.btn-danger:hover, .table td .btn-sm.btn-outline-danger:hover { color: var(--danger) !important; border-color: var(--danger); background: var(--danger-soft); }
 .table td .btn-sm.btn-success:hover, .table td .btn-sm.btn-outline-success:hover { color: var(--success) !important; border-color: var(--success); background: var(--success-soft); }
 .table td.text-end, .table td:last-child:has(.btn) { white-space: nowrap; }

@@ -6,7 +6,7 @@
     <div class="panel">
         <div class="panel-body p-3 p-lg-4">
             <div class="panel-header d-flex flex-wrap justify-content-between align-items-center mb-3 border-bottom-0 pb-0 gap-2">
-                <form method="GET" action="{{ route('staff.staffs.index') }}" class="d-flex flex-wrap gap-2">
+                <form method="GET" action="{{ route('staff.staffs.index') }}" class="d-flex flex-wrap flex-md-nowrap gap-2">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search..." class="form-control" style="max-width: 250px;">
                     <select name="department_id" class="form-select" style="max-width: 200px;">
                         <option value="">All Departments</option>
@@ -43,19 +43,24 @@
                         @forelse($staffs as $item)
                             <tr>
                                 <td>
-                                    <div class="fw-semibold">{{ $item->user->name }}</div>
-                                    <div class="text-muted small">{{ $item->user->email }}</div>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <span class="initials initials-lg">{{ collect(preg_split('/\s+/', trim($item->user->name)))->filter()->take(2)->map(fn ($p) => mb_substr($p, 0, 1))->implode('') }}</span>
+                                        <div>
+                                            <div class="fw-semibold">{{ $item->user->name }}</div>
+                                            <div class="text-muted small">{{ $item->user->email }}</div>
+                                        </div>
+                                    </div>
                                 </td>
-                                <td>{{ $item->employee_id }}</td>
+                                <td>@if($item->employee_id)<span class="badge bg-secondary">{{ $item->employee_id }}</span>@else<span class="text-muted">—</span>@endif</td>
                                 <td>{{ optional($item->department)->name }}</td>
                                 <td><span class="badge bg-{{ $item->status == 'active' ? 'success' : ($item->status == 'on_leave' ? 'warning' : 'secondary') }}">{{ ucfirst(str_replace('_', ' ', $item->status)) }}</span></td>
                                 <td class="text-end">
-                                    <a href="{{ route('staff.staffs.show', $item) }}" class="btn btn-sm btn-outline-info me-1">View</a>
-                                    <a href="{{ route('staff.staffs.edit', $item) }}" class="btn btn-sm btn-outline-primary me-1">Edit</a>
+                                    <a href="{{ route('staff.staffs.show', $item) }}" class="btn btn-sm btn-outline-info" title="View" aria-label="View"><i class="bi bi-eye"></i></a>
+                                    <a href="{{ route('staff.staffs.edit', $item) }}" class="btn btn-sm btn-outline-primary" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
                                     <form action="{{ route('staff.staffs.destroy', $item) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete" aria-label="Delete"><i class="bi bi-trash"></i></button>
                                     </form>
                                 </td>
                             </tr>

@@ -6,7 +6,7 @@
     <div class="panel">
         <div class="panel-body p-3 p-lg-4">
             <div class="panel-header d-flex flex-wrap justify-content-between align-items-center mb-3 border-bottom-0 pb-0 gap-2">
-                <form method="GET" action="{{ route('staff.departments.index') }}" class="d-flex flex-wrap gap-2">
+                <form method="GET" action="{{ route('staff.departments.index') }}" class="d-flex flex-wrap flex-md-nowrap gap-2">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search..." class="form-control" style="max-width: 250px;">
                     
                     <button type="submit" class="btn btn-dark">Search</button>
@@ -39,11 +39,11 @@
                                 <td>{{ $item->description }}</td>
                                 <td class="text-end">
                                     
-                                    <a href="{{ route('staff.departments.edit', $item) }}" class="btn btn-sm btn-outline-primary me-1">Edit</a>
+                                    <a href="{{ route('staff.departments.edit', $item) }}" class="btn btn-sm btn-outline-primary" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
                                     <form action="{{ route('staff.departments.destroy', $item) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete" aria-label="Delete"><i class="bi bi-trash"></i></button>
                                     </form>
                                 </td>
                             </tr>

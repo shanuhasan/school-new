@@ -56,6 +56,9 @@
                                 <td>{{ $guardian->occupation ?? '-' }}</td>
                                 <td><span class="badge bg-info text-white">{{ $guardian->students()->count() }}</span></td>
                                 <td class="text-end">
+                                    <a href="{{ route('guardians.show', $guardian) }}" class="btn btn-sm btn-info" title="View" aria-label="View">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
                                     <a href="{{ route('guardians.edit', $guardian) }}" class="btn btn-sm btn-primary" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>

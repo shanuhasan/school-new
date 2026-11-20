@@ -6,7 +6,7 @@
     <div class="panel">
         <div class="panel-body p-3 p-lg-4">
             <div class="panel-header d-flex justify-content-between align-items-center mb-0 border-bottom-0 pb-0">
-                <form method="GET" action="{{ route('academic.classes.index') }}" class="d-flex">
+                <form method="GET" action="{{ route('academic.classes.index') }}" class="d-flex gap-2">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search classes..." class="form-control me-2" style="max-width: 250px;">
                     <button type="submit" class="btn btn-dark">Search</button>
                 </form>
@@ -39,11 +39,11 @@
                                 <td>{{ $class->level }}</td>
                                 <td>{{ $class->created_at->format('Y-m-d') }}</td>
                                 <td class="text-end">
-                                    <a href="{{ route('academic.classes.edit', $class) }}" class="btn btn-sm btn-outline-primary me-1">Edit</a>
+                                    <a href="{{ route('academic.classes.edit', $class) }}" class="btn btn-sm btn-outline-primary" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
                                     <form action="{{ route('academic.classes.destroy', $class) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete" aria-label="Delete"><i class="bi bi-trash"></i></button>
                                     </form>
                                 </td>
                             </tr>

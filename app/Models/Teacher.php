@@ -49,4 +49,29 @@ class Teacher extends Model
     {
         return $this->belongsToMany(SchoolClass::class, 'teacher_school_class')->withTimestamps();
     }
+
+    /**
+     * Filters shared by the teachers page and the Excel export. Keys: search, department_id.
+     * The search is grouped so it can never widen the school / department conditions.
+     */
+    public function scopeFilter(\Illuminate\Database\Eloquent\Builder $query, array $filters): \Illuminate\Database\Eloquent\Builder
+    {
+        $search = trim((string) ($filters['search'] ?? ''));
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('user', function ($u) use ($search) {
+                    $u->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%");
+                })->orWhere('employee_id', 'like', "%{$search}%");
+            });
+        }
+
+        if (! empty($filters['department_id'])) {
+            $query->where('department_id', $filters['department_id']);
+        }
+
+        return $query;
+    }
 }

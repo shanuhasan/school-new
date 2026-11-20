@@ -72,6 +72,12 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext:
 Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext::class])->prefix('staff')->name('staff.')->group(function () {
     Route::resource('departments', \App\Http\Controllers\DepartmentController::class)->except(['show']);
     Route::resource('designations', \App\Http\Controllers\DesignationController::class)->except(['show']);
+    // Bulk import / export (before the resource so "import" isn't read as a teacher id)
+    Route::get('teachers/import', [\App\Http\Controllers\TeacherImportController::class, 'create'])->name('teachers.import.create');
+    Route::get('teachers/import/template', [\App\Http\Controllers\TeacherImportController::class, 'template'])->name('teachers.import.template');
+    Route::post('teachers/import', [\App\Http\Controllers\TeacherImportController::class, 'store'])->name('teachers.import.store');
+    Route::get('teachers/export', \App\Http\Controllers\TeacherExportController::class)->name('teachers.export');
+
     Route::resource('teachers', \App\Http\Controllers\TeacherController::class);
     Route::resource('staffs', \App\Http\Controllers\StaffController::class);
     

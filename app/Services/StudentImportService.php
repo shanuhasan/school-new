@@ -6,7 +6,6 @@ use App\Models\AcademicSession;
 use App\Models\Guardian;
 use App\Models\SchoolClass;
 use App\Models\Student;
-use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -289,24 +288,7 @@ class StudentImportService
      */
     public function parseDate(string $value): ?string
     {
-        $value = trim($value);
-        if ($value === '') {
-            return null;
-        }
-
-        if (is_numeric($value) && (float) $value > 1000 && (float) $value < 80000) {
-            return Carbon::create(1899, 12, 30)->addDays((int) $value)->toDateString();
-        }
-
-        foreach (['Y-m-d', 'd-m-Y', 'd/m/Y', 'd.m.Y', 'Y/m/d', 'Y-m-d H:i:s'] as $format) {
-            $d = \DateTime::createFromFormat('!' . $format, $value);
-            $err = \DateTime::getLastErrors();
-            if ($d && (! $err || ($err['warning_count'] === 0 && $err['error_count'] === 0))) {
-                return $d->format('Y-m-d');
-            }
-        }
-
-        return null;
+        return SpreadsheetReader::parseDate($value);
     }
 
     /* ------------------------------------------------------------------ */

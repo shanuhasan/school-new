@@ -32,6 +32,32 @@ class SpreadsheetReader
         return $aliases[$h] ?? $h;
     }
 
+    /**
+     * Accepts YYYY-MM-DD, DD-MM-YYYY, DD/MM/YYYY, DD.MM.YYYY, YYYY/MM/DD and Excel serial dates.
+     * Returns Y-m-d or null when the value is not a valid date.
+     */
+    public static function parseDate(string $value): ?string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return null;
+        }
+
+        if (is_numeric($value) && (float) $value > 1000 && (float) $value < 80000) {
+            return gmdate('Y-m-d', ((int) $value - 25569) * 86400); // 25569 = 1970-01-01 in Excel days
+        }
+
+        foreach (['Y-m-d', 'd-m-Y', 'd/m/Y', 'd.m.Y', 'Y/m/d', 'Y-m-d H:i:s'] as $format) {
+            $d = \DateTime::createFromFormat('!' . $format, $value);
+            $err = \DateTime::getLastErrors();
+            if ($d && (! $err || ($err['warning_count'] === 0 && $err['error_count'] === 0))) {
+                return $d->format('Y-m-d');
+            }
+        }
+
+        return null;
+    }
+
     private function readCsv(string $path): array
     {
         $content = file_get_contents($path);
