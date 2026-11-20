@@ -567,8 +567,9 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 { color: var(--ink); font-w
 .btn-check:checked + .btn-outline-info { color: #fff; background: var(--info); border-color: var(--info); }
 .btn-link { --bs-btn-color: var(--brand); --bs-btn-hover-color: var(--brand-hover); text-decoration: none; }
 
-/* Row actions inside tables: quiet square icon buttons */
-.table td .btn-sm {
+/* Row actions inside tables: quiet square icon buttons.
+   Buttons inside a .btn-group (e.g. attendance status toggles) and radio labels keep their normal size. */
+.table td .btn-sm:not(.btn-group > .btn, label) {
   width: 32px;
   height: 32px;
   padding: 0;
@@ -576,13 +577,13 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 { color: var(--ink); font-w
   border: 1px solid var(--line);
   color: var(--ink-2) !important;
 }
-.table td .btn-sm:has(> :not(i)),
-.table td .btn-sm.btn-text { width: auto; padding: 0 0.65rem; }
-.table td .btn-sm:hover { border-color: var(--line-strong); background: var(--surface-2); }
-.table td .btn-sm.btn-primary:hover, .table td .btn-sm.btn-outline-primary:hover { color: var(--brand) !important; border-color: var(--brand); background: var(--brand-soft); }
-.table td .btn-sm.btn-info:hover, .table td .btn-sm.btn-outline-info:hover { color: var(--info) !important; border-color: var(--info); background: var(--info-soft); }
-.table td .btn-sm.btn-danger:hover, .table td .btn-sm.btn-outline-danger:hover { color: var(--danger) !important; border-color: var(--danger); background: var(--danger-soft); }
-.table td .btn-sm.btn-success:hover, .table td .btn-sm.btn-outline-success:hover { color: var(--success) !important; border-color: var(--success); background: var(--success-soft); }
+.table td .btn-sm:not(.btn-group > .btn, label):has(> :not(i)),
+.table td .btn-sm:not(.btn-group > .btn, label).btn-text { width: auto; padding: 0 0.65rem; }
+.table td .btn-sm:not(.btn-group > .btn, label):hover { border-color: var(--line-strong); background: var(--surface-2); }
+.table td .btn-sm:not(.btn-group > .btn, label).btn-primary:hover, .table td .btn-sm:not(.btn-group > .btn, label).btn-outline-primary:hover { color: var(--brand) !important; border-color: var(--brand); background: var(--brand-soft); }
+.table td .btn-sm:not(.btn-group > .btn, label).btn-info:hover, .table td .btn-sm:not(.btn-group > .btn, label).btn-outline-info:hover { color: var(--info) !important; border-color: var(--info); background: var(--info-soft); }
+.table td .btn-sm:not(.btn-group > .btn, label).btn-danger:hover, .table td .btn-sm:not(.btn-group > .btn, label).btn-outline-danger:hover { color: var(--danger) !important; border-color: var(--danger); background: var(--danger-soft); }
+.table td .btn-sm:not(.btn-group > .btn, label).btn-success:hover, .table td .btn-sm:not(.btn-group > .btn, label).btn-outline-success:hover { color: var(--success) !important; border-color: var(--success); background: var(--success-soft); }
 .table td.text-end, .table td:last-child:has(.btn) { white-space: nowrap; }
 .table td form.d-inline, .table td form.d-inline-block { display: inline-block; }
 
@@ -855,6 +856,66 @@ code { color: var(--ink-2); background: var(--surface-3); padding: 0.1em 0.4em; 
 .btn .text-light, .badge.text-light { color: inherit !important; }
 .border-secondary { border-color: var(--line) !important; }
 .bg-opacity-10.bg-white { background: var(--surface-2) !important; }
+
+/* --------------------------------------------------------------------------
+   Attendance register
+   -------------------------------------------------------------------------- */
+.att-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }
+.att-head h2 { font-size: 1.15rem; font-weight: 600; margin: 0; }
+.att-head .meta { color: var(--muted); font-size: 0.85rem; margin-top: 0.2rem; }
+
+.att-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.75rem; margin-bottom: 1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); }
+.att-tally { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; font-size: 0.85rem; color: var(--muted); }
+.att-tally b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.att-tally i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 0.35rem; }
+
+/* Segmented status control */
+.att-toggle { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); }
+.att-toggle .btn-check + label {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem;
+  min-width: 72px; height: 32px; padding: 0 0.7rem; margin: 0;
+  border: 0; border-radius: 7px; background: transparent;
+  color: var(--muted); font-size: 0.8rem; font-weight: 500; white-space: nowrap; cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+.att-toggle .btn-check + label:hover { color: var(--ink); background: var(--surface); }
+.att-toggle .btn-check:focus-visible + label { outline: 2px solid var(--brand); outline-offset: 1px; }
+.att-toggle .btn-check:checked + label { color: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.12); }
+.att-toggle .btn-check:checked + label.s-present { background: var(--success); }
+.att-toggle .btn-check:checked + label.s-late { background: var(--accent); }
+.att-toggle .btn-check:checked + label.s-half_day { background: var(--info); }
+.att-toggle .btn-check:checked + label.s-absent { background: var(--danger); }
+html[data-theme="dark"] .att-toggle .btn-check:checked + label { color: #0c1410; }
+
+/* Row tint follows the chosen status, so absences stand out when scanning */
+.att-table tr[data-status="absent"] > td { background: color-mix(in srgb, var(--danger-soft) 55%, transparent); }
+.att-table tr[data-status="late"] > td,
+.att-table tr[data-status="half_day"] > td { background: color-mix(in srgb, var(--warning-soft) 45%, transparent); }
+.att-table .form-control-sm { min-width: 160px; }
+
+.att-savebar { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-top: 1.25rem; }
+.att-savebar .hint { color: var(--muted); font-size: 0.85rem; margin-right: auto; }
+
+@media (max-width: 767.98px) {
+  /* Each student becomes a card: name on top, full-width status buttons, remarks below */
+  .att-table, .att-table tbody, .att-table tr, .att-table td { display: block; width: 100%; }
+  .att-table thead { display: none; }
+  .table-responsive:has(.att-table) { border: 0; overflow: visible; }
+  .att-table tr { border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 0.75rem; overflow: hidden; }
+  .att-table > tbody > tr > td { border: 0; padding: 0.5rem 0.85rem !important; white-space: normal !important; }
+  .att-table > tbody > tr > td:first-child { padding-top: 0.85rem !important; }
+  .att-table > tbody > tr > td:last-child { padding-bottom: 0.85rem !important; }
+  .att-table .att-toggle { display: flex; width: 100%; }
+  .att-table .att-toggle .btn-check + label { flex: 1; min-width: 0; padding: 0 0.3rem; }
+  .att-table .form-control-sm { min-width: 0; }
+  .att-savebar {
+    position: sticky; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 8px); z-index: 5;
+    padding: 0.65rem; border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--surface); box-shadow: var(--shadow-pop);
+  }
+  .att-savebar .btn { flex: 1; }
+  .att-savebar .hint { display: none; }
+}
 
 /* Legacy metric cards still referenced in a few views */
 .metric-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); }
