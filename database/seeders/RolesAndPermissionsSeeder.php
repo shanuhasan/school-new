@@ -56,16 +56,6 @@ class RolesAndPermissionsSeeder extends Seeder
             'exams.view', 'marks.enter'
         ]);
 
-        $student->syncPermissions([
-            'timetable.view',
-            'homework.view', 'homework.submit',
-        ]);
-
-        $parent->syncPermissions([
-            'timetable.view',
-            'homework.view',
-        ]);
-
         // Accountant
         $accountant->syncPermissions([
             'fees.view', 'fees.create', 'fees.update', 'fees.collect', 'fees.refund'
@@ -74,11 +64,18 @@ class RolesAndPermissionsSeeder extends Seeder
         // Principal / School Admin gets all for their school (simplified for now to all)
         $schoolAdmin->syncPermissions(Permission::all());
         $principal->syncPermissions(Permission::all());
-        
-        // Student / Parent
-        $student->syncPermissions(['students.view', 'attendance.view', 'timetable.view', 'exams.view', 'fees.view']);
-        $parent->syncPermissions(['students.view', 'attendance.view', 'timetable.view', 'exams.view', 'fees.view']);
-        
+
+        // Student / Parent — one sync each with the full intended set (don't call syncPermissions
+        // twice for the same role: the second call replaces the first).
+        $student->syncPermissions([
+            'attendance.view', 'timetable.view', 'exams.view', 'fees.view',
+            'homework.view', 'homework.submit',
+        ]);
+        $parent->syncPermissions([
+            'students.view', 'attendance.view', 'timetable.view', 'exams.view', 'fees.view',
+            'homework.view',
+        ]);
+
         // Super Admin gets all implicitly via Gate::before in AppServiceProvider
     }
 }

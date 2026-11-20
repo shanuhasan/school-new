@@ -21,6 +21,11 @@ Route::middleware('auth')->group(function () {
     // "Login as" (impersonation) — Super Admin only; see ImpersonationController.
     // stop() stays reachable while impersonating (the impersonated user isn't a Super Admin).
     Route::get('/admin/users', [\App\Http\Controllers\Admin\UserAdminController::class, 'index'])->name('admin.users.index');
+
+    // Roles & permissions manager (Super Admin only)
+    Route::get('/admin/roles', [\App\Http\Controllers\Admin\RolePermissionController::class, 'index'])->name('admin.roles.index');
+    Route::get('/admin/roles/{role}/edit', [\App\Http\Controllers\Admin\RolePermissionController::class, 'edit'])->name('admin.roles.edit');
+    Route::put('/admin/roles/{role}', [\App\Http\Controllers\Admin\RolePermissionController::class, 'update'])->name('admin.roles.update');
     Route::post('/admin/impersonate/{user}', [\App\Http\Controllers\Admin\ImpersonationController::class, 'start'])->name('admin.impersonate.start');
     Route::post('/admin/impersonate-stop', [\App\Http\Controllers\Admin\ImpersonationController::class, 'stop'])->name('admin.impersonate.stop');
 });

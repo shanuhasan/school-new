@@ -25,7 +25,10 @@
       <span class="nav-text">Dashboard</span>
     </a>
 
+    @canany(['students.create', 'staff.manage'])
     <div class="nav-group-label">People</div>
+    @endcanany
+    @can('students.create')
     <div class="nav-item">
       <a class="nav-link {{ $studentsOpen ? '' : 'collapsed' }}" href="#studentsSubmenu" data-bs-toggle="collapse" role="button" aria-expanded="{{ $studentsOpen ? 'true' : 'false' }}" aria-controls="studentsSubmenu" title="Students">
         <span class="nav-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
@@ -38,7 +41,9 @@
         </ul>
       </div>
     </div>
+    @endcan
 
+    @can('staff.manage')
     <div class="nav-item">
       <a class="nav-link {{ $staffOpen ? '' : 'collapsed' }}" href="#staffSubmenu" data-bs-toggle="collapse" role="button" aria-expanded="{{ $staffOpen ? 'true' : 'false' }}" aria-controls="staffSubmenu" title="Staff & Teachers">
         <span class="nav-icon"><i class="bi bi-person-badge" aria-hidden="true"></i></span>
@@ -53,17 +58,25 @@
         </ul>
       </div>
     </div>
+    @endcan
 
+    @canany(['attendance.create', 'homework.view', 'timetable.view', 'exams.view', 'marks.enter', 'results.publish', 'academic.manage'])
     <div class="nav-group-label">Teaching</div>
+    @endcanany
+    @can('attendance.create')
     <a class="nav-link {{ request()->routeIs('academic.attendance.*') ? 'active' : '' }}" href="{{ route('academic.attendance.index') }}" title="Attendance">
       <span class="nav-icon"><i class="bi bi-check2-square" aria-hidden="true"></i></span>
       <span class="nav-text">Attendance</span>
     </a>
+    @endcan
+    @can('homework.view')
     <a class="nav-link {{ request()->routeIs('academic.homework.*') ? 'active' : '' }}" href="{{ route('academic.homework.index') }}" title="Homework">
       <span class="nav-icon"><i class="bi bi-journal-bookmark" aria-hidden="true"></i></span>
       <span class="nav-text">Homework</span>
     </a>
+    @endcan
 
+    @can('timetable.view')
     <div class="nav-item">
       <a class="nav-link {{ $timetableOpen ? '' : 'collapsed' }}" href="#timetableSubmenu" data-bs-toggle="collapse" role="button" aria-expanded="{{ $timetableOpen ? 'true' : 'false' }}" aria-controls="timetableSubmenu" title="Timetable">
         <span class="nav-icon"><i class="bi bi-calendar-week" aria-hidden="true"></i></span>
@@ -71,14 +84,18 @@
       </a>
       <div class="collapse {{ $timetableOpen ? 'show' : '' }}" id="timetableSubmenu">
         <ul class="sub-nav">
+          @can('timetable.manage')
           <li><a class="nav-link {{ request()->routeIs('academic.timetables.*') ? 'active' : '' }}" href="{{ route('academic.timetables.index') }}">Class timetables</a></li>
+          @endcan
           @role('Teacher')
           <li><a class="nav-link {{ request()->routeIs('staff.timetables.teacher') ? 'active' : '' }}" href="{{ route('staff.timetables.teacher') }}">My timetable</a></li>
           @endrole
         </ul>
       </div>
     </div>
+    @endcan
 
+    @canany(['exams.view', 'marks.enter', 'results.publish', 'academic.manage'])
     <div class="nav-item">
       <a class="nav-link {{ $examsOpen ? '' : 'collapsed' }}" href="#examsSubmenu" data-bs-toggle="collapse" role="button" aria-expanded="{{ $examsOpen ? 'true' : 'false' }}" aria-controls="examsSubmenu" title="Examinations">
         <span class="nav-icon"><i class="bi bi-journal-text" aria-hidden="true"></i></span>
@@ -86,22 +103,31 @@
       </a>
       <div class="collapse {{ $examsOpen ? 'show' : '' }}" id="examsSubmenu">
         <ul class="sub-nav">
-          <li><a class="nav-link {{ request()->routeIs('academic.exams.*') ? 'active' : '' }}" href="{{ route('academic.exams.index') }}">Exams</a></li>
-          <li><a class="nav-link {{ request()->routeIs('academic.marks.*') ? 'active' : '' }}" href="{{ route('academic.marks.index') }}">Marks entry</a></li>
-          <li><a class="nav-link {{ request()->routeIs('academic.results.*') ? 'active' : '' }}" href="{{ route('academic.results.index') }}">Results</a></li>
-          <li><a class="nav-link {{ request()->routeIs('academic.grades.*') ? 'active' : '' }}" href="{{ route('academic.grades.index') }}">Grading scale</a></li>
-          <li><a class="nav-link {{ request()->routeIs('academic.exam-types.*') ? 'active' : '' }}" href="{{ route('academic.exam-types.index') }}">Exam types</a></li>
+          @can('exams.view')<li><a class="nav-link {{ request()->routeIs('academic.exams.*') ? 'active' : '' }}" href="{{ route('academic.exams.index') }}">Exams</a></li>@endcan
+          @can('marks.enter')<li><a class="nav-link {{ request()->routeIs('academic.marks.*') ? 'active' : '' }}" href="{{ route('academic.marks.index') }}">Marks entry</a></li>@endcan
+          @can('results.publish')<li><a class="nav-link {{ request()->routeIs('academic.results.*') ? 'active' : '' }}" href="{{ route('academic.results.index') }}">Results</a></li>@endcan
+          @can('academic.manage')<li><a class="nav-link {{ request()->routeIs('academic.grades.*') ? 'active' : '' }}" href="{{ route('academic.grades.index') }}">Grading scale</a></li>@endcan
+          @can('academic.manage')<li><a class="nav-link {{ request()->routeIs('academic.exam-types.*') ? 'active' : '' }}" href="{{ route('academic.exam-types.index') }}">Exam types</a></li>@endcan
         </ul>
       </div>
     </div>
+    @endcanany
 
+    @php $isSuperAdmin = Auth::user()->hasRole('Super Admin'); @endphp
+    @if($isSuperAdmin || Auth::user()->canAny(['academic.manage', 'attendance.view_reports']))
     <div class="nav-group-label">Administration</div>
-    @role('Super Admin')
+    @endif
+    @if($isSuperAdmin)
     <a class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}" title="Users">
       <span class="nav-icon"><i class="bi bi-person-gear" aria-hidden="true"></i></span>
       <span class="nav-text">Users</span>
     </a>
-    @endrole
+    <a class="nav-link {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}" href="{{ route('admin.roles.index') }}" title="Roles & permissions">
+      <span class="nav-icon"><i class="bi bi-shield-lock" aria-hidden="true"></i></span>
+      <span class="nav-text">Roles &amp; permissions</span>
+    </a>
+    @endif
+    @can('academic.manage')
     <div class="nav-item">
       <a class="nav-link {{ $setupOpen ? '' : 'collapsed' }}" href="#academicSubmenu" data-bs-toggle="collapse" role="button" aria-expanded="{{ $setupOpen ? 'true' : 'false' }}" aria-controls="academicSubmenu" title="Academic setup">
         <span class="nav-icon"><i class="bi bi-sliders2" aria-hidden="true"></i></span>
@@ -116,7 +142,9 @@
         </ul>
       </div>
     </div>
+    @endcan
 
+    @can('attendance.view_reports')
     <div class="nav-item">
       <a class="nav-link {{ $reportsOpen ? '' : 'collapsed' }}" href="#reportsSubmenu" data-bs-toggle="collapse" role="button" aria-expanded="{{ $reportsOpen ? 'true' : 'false' }}" aria-controls="reportsSubmenu" title="Reports">
         <span class="nav-icon"><i class="bi bi-bar-chart-line" aria-hidden="true"></i></span>
@@ -130,6 +158,7 @@
         </ul>
       </div>
     </div>
+    @endcan
   </nav>
 
   <div class="sidebar-user">

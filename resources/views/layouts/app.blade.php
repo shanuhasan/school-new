@@ -149,15 +149,26 @@
       <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'active' : '' }}">
         <i class="bi bi-house{{ request()->routeIs('dashboard') ? '-fill' : '' }}" aria-hidden="true"></i>Home
       </a>
+      @can('students.create')
       <a href="{{ route('students.index') }}" class="{{ request()->routeIs('students.*', 'guardians.*') ? 'active' : '' }}">
         <i class="bi bi-people{{ request()->routeIs('students.*', 'guardians.*') ? '-fill' : '' }}" aria-hidden="true"></i>Students
       </a>
+      @endcan
+      @can('attendance.create')
       <a href="{{ route('academic.attendance.index') }}" class="{{ request()->routeIs('academic.attendance.*') ? 'active' : '' }}">
         <i class="bi bi-check2-square" aria-hidden="true"></i>Attendance
       </a>
+      @endcan
+      @can('homework.view')
+      <a href="{{ route('academic.homework.index') }}" class="{{ request()->routeIs('academic.homework.*') ? 'active' : '' }}">
+        <i class="bi bi-journal-bookmark" aria-hidden="true"></i>Homework
+      </a>
+      @endcan
+      @canany(['exams.view', 'marks.enter', 'results.publish'])
       <a href="{{ route('academic.exams.index') }}" class="{{ request()->routeIs('academic.exams.*', 'academic.marks.*', 'academic.results.*') ? 'active' : '' }}">
         <i class="bi bi-journal-text" aria-hidden="true"></i>Exams
       </a>
+      @endcanany
       <button type="button" data-sidebar-toggle aria-controls="adminSidebar" aria-label="Open full menu">
         <i class="bi bi-grid" aria-hidden="true"></i>Menu
       </button>

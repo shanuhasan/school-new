@@ -1,0 +1,95 @@
+@php $att = $attendance; @endphp
+<section class="stat-grid" aria-label="School at a glance">
+    <div class="stat">
+        <div class="stat-label"><i class="bi bi-people" aria-hidden="true"></i>Active students</div>
+        <div class="stat-value">{{ number_format($stats['students']) }}</div>
+        <div class="stat-meta"><a href="{{ route('students.index') }}">View register</a></div>
+    </div>
+    <div class="stat">
+        <div class="stat-label"><i class="bi bi-person-badge" aria-hidden="true"></i>Teachers</div>
+        <div class="stat-value">{{ number_format($stats['teachers']) }}</div>
+        <div class="stat-meta">{{ number_format($stats['staff']) }} support staff</div>
+    </div>
+    <div class="stat">
+        <div class="stat-label"><i class="bi bi-door-open" aria-hidden="true"></i>Classes</div>
+        <div class="stat-value">{{ number_format($stats['classes']) }}</div>
+        <div class="stat-meta"><a href="{{ route('academic.classes.index') }}">Manage classes</a></div>
+    </div>
+    <div class="stat">
+        <div class="stat-label"><i class="bi bi-check2-square" aria-hidden="true"></i>Attendance today</div>
+        <div class="stat-value">{{ $att['rate'] !== null ? $att['rate'] . '%' : '—' }}</div>
+        <div class="stat-meta">
+            @if($att['marked'] > 0)
+                {{ number_format($att['marked']) }} of {{ number_format($stats['students']) }} marked
+            @else
+                Not taken yet
+            @endif
+        </div>
+    </div>
+</section>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="panel h-100">
+            <div class="panel-body p-3 p-lg-4">
+                <div class="panel-header d-flex justify-content-between align-items-center mb-1">
+                    <h2>Today's attendance</h2>
+                    <a href="{{ route('academic.attendance.index') }}" class="btn btn-sm btn-light">Take attendance</a>
+                </div>
+
+                @if($att['marked'] > 0)
+                    @php $pct = fn ($n) => round($n / $att['marked'] * 100, 1); @endphp
+                    <div class="attendance-bar" role="img" aria-label="{{ $att['present'] }} present, {{ $att['late'] }} late, {{ $att['half_day'] }} half day, {{ $att['absent'] }} absent">
+                        <span style="width: {{ $pct($att['present']) }}%; background: var(--success)"></span>
+                        <span style="width: {{ $pct($att['late']) }}%; background: var(--accent)"></span>
+                        <span style="width: {{ $pct($att['half_day']) }}%; background: var(--info)"></span>
+                        <span style="width: {{ $pct($att['absent']) }}%; background: var(--danger)"></span>
+                    </div>
+                    <div class="legend">
+                        <span><i style="background: var(--success)"></i>Present <strong class="text-body">{{ $att['present'] }}</strong></span>
+                        <span><i style="background: var(--accent)"></i>Late <strong class="text-body">{{ $att['late'] }}</strong></span>
+                        <span><i style="background: var(--info)"></i>Half day <strong class="text-body">{{ $att['half_day'] }}</strong></span>
+                        <span><i style="background: var(--danger)"></i>Absent <strong class="text-body">{{ $att['absent'] }}</strong></span>
+                    </div>
+                @else
+                    <div class="empty-note">
+                        <i class="bi bi-clipboard" aria-hidden="true"></i>
+                        No attendance has been recorded for today yet.
+                    </div>
+                @endif
+
+                <hr class="my-4">
+
+                <h3 class="h6 fw-semibold mb-3">Shortcuts</h3>
+                <div class="quick-links">
+                    <a class="quick-link" href="{{ route('students.create') }}"><i class="bi bi-person-plus" aria-hidden="true"></i>Admit a student</a>
+                    <a class="quick-link" href="{{ route('academic.homework.create') }}"><i class="bi bi-journal-plus" aria-hidden="true"></i>Set homework</a>
+                    <a class="quick-link" href="{{ route('academic.marks.index') }}"><i class="bi bi-pencil-square" aria-hidden="true"></i>Enter marks</a>
+                    <a class="quick-link" href="{{ route('reports.attendance.monthly') }}"><i class="bi bi-calendar3" aria-hidden="true"></i>Monthly report</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="panel mb-4">
+            <div class="panel-body p-3 p-lg-4">
+                <div class="panel-header d-flex justify-content-between align-items-center mb-3">
+                    <h2>Upcoming exams</h2>
+                    <a href="{{ route('academic.exams.index') }}" class="small fw-medium">All exams</a>
+                </div>
+                @include('dashboard.partials.exam-feed', ['exams' => $upcomingExams])
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-body p-3 p-lg-4">
+                <div class="panel-header d-flex justify-content-between align-items-center mb-3">
+                    <h2>Homework due</h2>
+                    <a href="{{ route('academic.homework.index') }}" class="small fw-medium">All homework</a>
+                </div>
+                @include('dashboard.partials.homework-feed', ['items' => $homeworkDue])
+            </div>
+        </div>
+    </div>
+</div>
