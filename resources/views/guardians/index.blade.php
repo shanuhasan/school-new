@@ -21,9 +21,18 @@
                     <input type="text" name="search" class="form-control" placeholder="Search name, phone, email..." value="{{ request('search') }}" style="max-width: 250px;">
                     <button type="submit" class="btn btn-dark">Search</button>
                 </form>
-                <a href="{{ route('guardians.create') }}" class="btn btn-primary">
-                    <i class="bi bi-plus-lg me-1"></i> Add Guardian
-                </a>
+                <div class="d-flex gap-2">
+                    <a href="{{ route('guardians.export', request()->only('search')) }}" class="btn btn-light flex-fill"
+                       title="{{ request()->filled('search') ? 'Export the matching guardians to Excel' : 'Export all guardians to Excel' }}">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> Export
+                    </a>
+                    <a href="{{ route('guardians.import.create') }}" class="btn btn-light flex-fill">
+                        <i class="bi bi-file-earmark-arrow-up"></i> Import
+                    </a>
+                    <a href="{{ route('guardians.create') }}" class="btn btn-primary flex-fill">
+                        <i class="bi bi-plus-lg me-1"></i> Add Guardian
+                    </a>
+                </div>
             </div>
 
             <div class="table-responsive">

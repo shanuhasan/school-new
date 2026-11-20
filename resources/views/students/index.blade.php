@@ -32,9 +32,19 @@
                     </select>
                     <button type="submit" class="btn btn-dark">Search</button>
                 </form>
-                <a href="{{ route('students.create') }}" class="btn btn-primary">
-                    <i class="bi bi-plus-lg me-1"></i> Add Student
-                </a>
+                <div class="d-flex gap-2">
+                    {{-- Export follows whatever search/filters are currently applied --}}
+                    <a href="{{ route('students.export', request()->only(['search', 'class_id', 'section_id', 'session_id', 'status'])) }}" class="btn btn-light flex-fill"
+                       title="{{ request()->anyFilled(['search', 'class_id', 'status']) ? 'Export the filtered students to Excel' : 'Export all students to Excel' }}">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> Export
+                    </a>
+                    <a href="{{ route('students.import.create') }}" class="btn btn-light flex-fill">
+                        <i class="bi bi-file-earmark-arrow-up"></i> Import
+                    </a>
+                    <a href="{{ route('students.create') }}" class="btn btn-primary flex-fill">
+                        <i class="bi bi-plus-lg me-1"></i> Add Student
+                    </a>
+                </div>
             </div>
 
             <div class="table-responsive">

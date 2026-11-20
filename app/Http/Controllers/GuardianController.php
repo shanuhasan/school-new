@@ -14,17 +14,8 @@ class GuardianController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Guardian::query();
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                  ->orWhere('last_name', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
-            });
-        }
+        // Same search is used by the Excel export (GuardianExportController)
+        $query = Guardian::query()->filter($request->only('search'));
 
         $guardians = $query->latest()->paginate(15)->withQueryString();
 

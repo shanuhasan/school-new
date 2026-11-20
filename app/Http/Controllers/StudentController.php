@@ -19,36 +19,8 @@ class StudentController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Student::query();
-
-        // Search by admission number, name, phone
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('admission_number', 'like', "%{$search}%")
-                  ->orWhere('first_name', 'like', "%{$search}%")
-                  ->orWhere('last_name', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%");
-            });
-        }
-
-        // Filter by class (via enrollments)
-        if ($request->filled('class_id')) {
-            $query->whereHas('enrollments', function ($q) use ($request) {
-                $q->where('school_class_id', $request->class_id);
-                if ($request->filled('section_id')) {
-                    $q->where('section_id', $request->section_id);
-                }
-                if ($request->filled('session_id')) {
-                    $q->where('academic_session_id', $request->session_id);
-                }
-            });
-        }
-
-        // Filter by status
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
+        // Same filters are used by the Excel export (StudentExportController)
+        $query = Student::query()->filter($request->only(['search', 'class_id', 'section_id', 'session_id', 'status']));
 
         $students = $query->latest()->paginate(15)->withQueryString();
         

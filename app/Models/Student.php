@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Traits\BelongsToSchool;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -53,5 +54,42 @@ class Student extends Model
     public function documents(): HasMany
     {
         return $this->hasMany(StudentDocument::class);
+    }
+
+    /**
+     * List filters shared by the students page and the Excel export.
+     * Keys: search, class_id, section_id, session_id, status.
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        $filters = array_filter($filters, fn ($v) => $v !== null && $v !== '');
+
+        if (isset($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('admission_number', 'like', "%{$search}%")
+                    ->orWhere('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
+            });
+        }
+
+        if (isset($filters['class_id'])) {
+            $query->whereHas('enrollments', function ($q) use ($filters) {
+                $q->where('school_class_id', $filters['class_id']);
+                if (isset($filters['section_id'])) {
+                    $q->where('section_id', $filters['section_id']);
+                }
+                if (isset($filters['session_id'])) {
+                    $q->where('academic_session_id', $filters['session_id']);
+                }
+            });
+        }
+
+        if (isset($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        return $query;
     }
 }

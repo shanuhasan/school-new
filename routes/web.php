@@ -80,6 +80,17 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext:
 });
 
 Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext::class])->group(function () {
+    // Bulk import (registered before the resource so "import" isn't read as a student id)
+    Route::get('students/import', [\App\Http\Controllers\StudentImportController::class, 'create'])->name('students.import.create');
+    Route::get('students/import/template', [\App\Http\Controllers\StudentImportController::class, 'template'])->name('students.import.template');
+    Route::post('students/import', [\App\Http\Controllers\StudentImportController::class, 'store'])->name('students.import.store');
+    Route::get('students/export', \App\Http\Controllers\StudentExportController::class)->name('students.export');
+
+    Route::get('guardians/import', [\App\Http\Controllers\GuardianImportController::class, 'create'])->name('guardians.import.create');
+    Route::get('guardians/import/template', [\App\Http\Controllers\GuardianImportController::class, 'template'])->name('guardians.import.template');
+    Route::post('guardians/import', [\App\Http\Controllers\GuardianImportController::class, 'store'])->name('guardians.import.store');
+    Route::get('guardians/export', \App\Http\Controllers\GuardianExportController::class)->name('guardians.export');
+
     Route::resource('students', \App\Http\Controllers\StudentController::class);
     Route::resource('guardians', \App\Http\Controllers\GuardianController::class);
     
