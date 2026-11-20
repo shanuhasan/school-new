@@ -1,30 +1,48 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="csrf-token" content="{{ csrf_token() }}">
+<head>
+  @include('layouts.partials.head', ['title' => $title ?? null])
+</head>
+<body>
+  <div class="auth-page">
+    <aside class="auth-aside" aria-hidden="true">
+      <a class="brand-mark" href="{{ url('/') }}" tabindex="-1">
+        <span class="brand-icon">{{ mb_strtoupper(mb_substr(config('app.name'), 0, 1)) }}</span>
+        <span class="brand-copy">
+          <span class="brand-title">{{ config('app.name') }}</span>
+          <span class="brand-subtitle">School office</span>
+        </span>
+      </a>
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+      <div class="auth-quote">
+        <h2>Registers, timetables and report cards, kept in one place.</h2>
+        <p>Sign in to take attendance, set homework, enter marks and see how every class is doing today.</p>
+      </div>
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+      <div class="auth-modules">
+        <span>Admissions</span><span>Attendance</span><span>Timetable</span><span>Homework</span><span>Examinations</span><span>Reports</span>
+      </div>
+    </aside>
 
-        <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
-    </head>
-    <body class="font-sans text-gray-900 antialiased">
-        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
-            <div>
-                <a href="/">
-                    <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
-                </a>
-            </div>
-
-            <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
-                {{ $slot }}
-            </div>
+    <main class="auth-main">
+      <div class="auth-card">
+        <div class="auth-mobile-brand">
+          <a class="brand-mark" href="{{ url('/') }}">
+            <span class="brand-icon">{{ mb_strtoupper(mb_substr(config('app.name'), 0, 1)) }}</span>
+            <span class="brand-copy">
+              <span class="brand-title">{{ config('app.name') }}</span>
+            </span>
+          </a>
         </div>
-    </body>
+
+        {{ $slot }}
+
+        <p class="auth-foot">&copy; {{ date('Y') }} {{ config('app.name') }}</p>
+      </div>
+    </main>
+  </div>
+
+  <script src="{{ asset('assets/js/bootstrap.bundle.min.js') }}"></script>
+  <script src="{{ asset('assets/js/app-shell.js') }}?v={{ @filemtime(public_path('assets/js/app-shell.js')) }}"></script>
+</body>
 </html>

@@ -1,48 +1,158 @@
+@php
+    $hour = now()->hour;
+    $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good evening');
+    $firstName = \Illuminate\Support\Str::before(Auth::user()->name, ' ');
+    $att = $attendance;
+@endphp
 <x-app-layout>
-    <x-slot name="header">
-        <div class="page-heading"><div class="page-heading-copy"><div><h1 class="h3 mb-1">{{ __('Dashboard') }}</h1></div></div></div>
-    </x-slot>
+    <div class="greeting">
+        <div class="date">{{ now()->format('l, j F Y') }}</div>
+        <h1>{{ $greeting }}, {{ $firstName }}.</h1>
+        <p>
+            @if($school)
+                Here's where {{ $school->name }} stands today.
+            @else
+                You're not linked to a school yet. Ask an administrator to add you to one.
+            @endif
+        </p>
+    </div>
 
-    <div class="row">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="metric-card metric-primary h-100">
-                <div class="panel-body p-3 p-lg-4">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-uppercase mb-1">
-                                Total Students</div>
-                            <div class="h5 mb-0 font-weight-bold">1,250</div>
+    @if($stats)
+        <section class="stat-grid" aria-label="School at a glance">
+            <div class="stat">
+                <div class="stat-label"><i class="bi bi-people" aria-hidden="true"></i>Active students</div>
+                <div class="stat-value">{{ number_format($stats['students']) }}</div>
+                <div class="stat-meta"><a href="{{ route('students.index') }}">View register</a></div>
+            </div>
+            <div class="stat">
+                <div class="stat-label"><i class="bi bi-person-badge" aria-hidden="true"></i>Teachers</div>
+                <div class="stat-value">{{ number_format($stats['teachers']) }}</div>
+                <div class="stat-meta">{{ number_format($stats['staff']) }} support staff</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label"><i class="bi bi-door-open" aria-hidden="true"></i>Classes</div>
+                <div class="stat-value">{{ number_format($stats['classes']) }}</div>
+                <div class="stat-meta"><a href="{{ route('academic.classes.index') }}">Manage classes</a></div>
+            </div>
+            <div class="stat">
+                <div class="stat-label"><i class="bi bi-check2-square" aria-hidden="true"></i>Attendance today</div>
+                <div class="stat-value">{{ $att['rate'] !== null ? $att['rate'] . '%' : '—' }}</div>
+                <div class="stat-meta">
+                    @if($att['marked'] > 0)
+                        {{ number_format($att['marked']) }} of {{ number_format($stats['students']) }} marked
+                    @else
+                        Not taken yet
+                    @endif
+                </div>
+            </div>
+        </section>
+
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <div class="panel h-100">
+                    <div class="panel-body p-3 p-lg-4">
+                        <div class="panel-header d-flex justify-content-between align-items-center mb-1">
+                            <h2>Today's attendance</h2>
+                            <a href="{{ route('academic.attendance.mark') }}" class="btn btn-sm btn-light">Take attendance</a>
                         </div>
-                        <div class="col-auto">
-                            <i class="bi bi-people fa-2x text-white-50" style="font-size: 2rem;"></i>
+
+                        @if($att['marked'] > 0)
+                            @php $pct = fn ($n) => round($n / $att['marked'] * 100, 1); @endphp
+                            <div class="attendance-bar" role="img" aria-label="{{ $att['present'] }} present, {{ $att['late'] }} late, {{ $att['half_day'] }} half day, {{ $att['absent'] }} absent">
+                                <span style="width: {{ $pct($att['present']) }}%; background: var(--success)"></span>
+                                <span style="width: {{ $pct($att['late']) }}%; background: var(--accent)"></span>
+                                <span style="width: {{ $pct($att['half_day']) }}%; background: var(--info)"></span>
+                                <span style="width: {{ $pct($att['absent']) }}%; background: var(--danger)"></span>
+                            </div>
+                            <div class="legend">
+                                <span><i style="background: var(--success)"></i>Present <strong class="text-body">{{ $att['present'] }}</strong></span>
+                                <span><i style="background: var(--accent)"></i>Late <strong class="text-body">{{ $att['late'] }}</strong></span>
+                                <span><i style="background: var(--info)"></i>Half day <strong class="text-body">{{ $att['half_day'] }}</strong></span>
+                                <span><i style="background: var(--danger)"></i>Absent <strong class="text-body">{{ $att['absent'] }}</strong></span>
+                            </div>
+                        @else
+                            <div class="empty-note">
+                                <i class="bi bi-clipboard" aria-hidden="true"></i>
+                                No attendance has been recorded for today yet.
+                            </div>
+                        @endif
+
+                        <hr class="my-4">
+
+                        <h3 class="h6 fw-semibold mb-3">Shortcuts</h3>
+                        <div class="quick-links">
+                            <a class="quick-link" href="{{ route('students.create') }}"><i class="bi bi-person-plus" aria-hidden="true"></i>Admit a student</a>
+                            <a class="quick-link" href="{{ route('academic.homework.create') }}"><i class="bi bi-journal-plus" aria-hidden="true"></i>Set homework</a>
+                            <a class="quick-link" href="{{ route('academic.marks.index') }}"><i class="bi bi-pencil-square" aria-hidden="true"></i>Enter marks</a>
+                            <a class="quick-link" href="{{ route('reports.attendance.monthly') }}"><i class="bi bi-calendar3" aria-hidden="true"></i>Monthly report</a>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="metric-card metric-success h-100">
-                <div class="panel-body p-3 p-lg-4">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-uppercase mb-1">
-                                Active Teachers</div>
-                            <div class="h5 mb-0 font-weight-bold">45</div>
+            <div class="col-lg-5">
+                <div class="panel mb-4">
+                    <div class="panel-body p-3 p-lg-4">
+                        <div class="panel-header d-flex justify-content-between align-items-center mb-3">
+                            <h2>Upcoming exams</h2>
+                            <a href="{{ route('academic.exams.index') }}" class="small fw-medium">All exams</a>
                         </div>
-                        <div class="col-auto">
-                            <i class="bi bi-person-badge fa-2x text-white-50" style="font-size: 2rem;"></i>
+                        @if($upcomingExams->isNotEmpty())
+                            <ul class="feed">
+                                @foreach($upcomingExams as $exam)
+                                    <li>
+                                        <div class="feed-date">
+                                            <b>{{ $exam->start_date?->format('j') }}</b>
+                                            <small>{{ $exam->start_date?->format('M') }}</small>
+                                        </div>
+                                        <div class="feed-body">
+                                            <strong><a href="{{ route('academic.exams.show', $exam) }}" class="text-body">{{ $exam->name }}</a></strong>
+                                            <span>
+                                                {{ $exam->examType->name ?? 'Exam' }}
+                                                @if($exam->start_date && $exam->end_date && ! $exam->start_date->isSameDay($exam->end_date))
+                                                    · until {{ $exam->end_date->format('j M') }}
+                                                @endif
+                                            </span>
+                                        </div>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <div class="empty-note"><i class="bi bi-calendar-x" aria-hidden="true"></i>No exams scheduled.</div>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-body p-3 p-lg-4">
+                        <div class="panel-header d-flex justify-content-between align-items-center mb-3">
+                            <h2>Homework due</h2>
+                            <a href="{{ route('academic.homework.index') }}" class="small fw-medium">All homework</a>
                         </div>
+                        @if($homeworkDue->isNotEmpty())
+                            <ul class="feed">
+                                @foreach($homeworkDue as $hw)
+                                    <li>
+                                        <div class="feed-date">
+                                            <b>{{ $hw->due_date?->format('j') }}</b>
+                                            <small>{{ $hw->due_date?->format('M') }}</small>
+                                        </div>
+                                        <div class="feed-body">
+                                            <strong><a href="{{ route('academic.homework.show', $hw) }}" class="text-body">{{ $hw->title }}</a></strong>
+                                            <span>
+                                                {{ $hw->subject->name ?? '' }}
+                                                @if($hw->schoolClass) · {{ $hw->schoolClass->name }}{{ $hw->section ? ' ' . $hw->section->name : '' }} @endif
+                                            </span>
+                                        </div>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <div class="empty-note"><i class="bi bi-journal-check" aria-hidden="true"></i>Nothing due. All caught up.</div>
+                        @endif
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-
-    <div class="card shadow-sm border-0 mt-4">
-        <div class="card-body p-4">
-            <h5 class="card-title">Welcome to {{ optional(Auth::user()->currentSchool)->name ?? config('app.name') }}</h5>
-            <p class="card-text text-muted">You are logged in as <strong>{{ Auth::user()->roles->pluck('name')->first() ?? 'User' }}</strong>.</p>
-        </div>
-    </div>
+    @endif
 </x-app-layout>

@@ -1,90 +1,122 @@
+@php
+    $user = Auth::user();
+    $currentSchool = $user->currentSchool;
+    $availableSchools = $user->hasRole('Super Admin') ? \App\Models\School::orderBy('name')->get() : $user->schools;
+    $roleName = $user->roles->pluck('name')->first() ?? 'User';
+    $initials = collect(preg_split('/\s+/', trim($user->name)))->filter()->take(2)->map(fn ($p) => mb_substr($p, 0, 1))->implode('');
+
+    $section = match (true) {
+        request()->routeIs('dashboard') => 'Dashboard',
+        request()->routeIs('students.*', 'guardians.*', 'documents.*') => 'Students',
+        request()->routeIs('staff.timetables.*', 'academic.timetables.*') => 'Timetable',
+        request()->routeIs('staff.*') => 'Staff & Teachers',
+        request()->routeIs('academic.exams.*', 'academic.exam-types.*', 'academic.marks.*', 'academic.results.*', 'academic.grades.*') => 'Examinations',
+        request()->routeIs('academic.attendance.*') => 'Attendance',
+        request()->routeIs('academic.homework.*') => 'Homework',
+        request()->routeIs('academic.*') => 'Academic Setup',
+        request()->routeIs('reports.*') => 'Reports',
+        request()->routeIs('profile.*') => 'Your Account',
+        default => '',
+    };
+@endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="csrf-token" content="{{ csrf_token() }}">
-  <title>{{ config('app.name', 'Laravel') }}</title>
-
-  <!-- Bootstrap 5 CSS from AdminHMD Theme -->
-  <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
+  @include('layouts.partials.head', ['title' => $section])
 </head>
 <body>
+  <a class="visually-hidden-focusable position-absolute top-0 start-0 m-2 btn btn-primary" style="z-index:2000" href="#main">Skip to content</a>
+
   <div class="admin-shell">
     <div class="sidebar-backdrop" data-sidebar-close></div>
 
-    <!-- Sidebar -->
-    @include('layouts.adminhmd-sidebar')
+    @include('layouts.adminhmd-sidebar', ['initials' => $initials, 'roleName' => $roleName, 'currentSchool' => $currentSchool])
 
     <div class="admin-main">
-      <!-- Top Navbar -->
-      <nav class="navbar admin-navbar navbar-expand bg-white">
-        <div class="container-fluid px-3 px-lg-4">
-          <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-controls="adminSidebar" aria-expanded="true" aria-label="Toggle sidebar">
-            <span></span>
-            <span></span>
-            <span></span>
-          </button>
+      <header class="admin-topbar">
+        <button class="icon-btn" type="button" data-sidebar-toggle aria-controls="adminSidebar" aria-expanded="true" aria-label="Toggle navigation">
+          <i class="bi bi-layout-sidebar" aria-hidden="true"></i>
+        </button>
 
-          <div class="d-flex align-items-center ms-auto gap-3">
-            
-            <!-- School Switcher Dropdown -->
-            @php
-                $user = Auth::user();
-                $availableSchools = $user->hasRole('Super Admin') ? \App\Models\School::all() : $user->schools;
-            @endphp
-            @if($availableSchools->count() > 1 || $user->hasRole('Super Admin'))
-            <div class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-building"></i>
-                <span class="d-none d-md-block">{{ optional($user->currentSchool)->name ?? 'Select School' }}</span>
-              </a>
-              <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                <li class="dropdown-header">Switch School</li>
+        <div class="topbar-title">
+          {{ $section ?: config('app.name') }}
+          @if($currentSchool)
+            <small>{{ $currentSchool->name }}</small>
+          @endif
+        </div>
+
+        <div class="topbar-actions">
+          @if($availableSchools->count() > 1 || $user->hasRole('Super Admin'))
+            <div class="dropdown d-none d-sm-block">
+              <button class="chip-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-building" aria-hidden="true"></i>
+                <span>{{ $currentSchool->name ?? 'Select school' }}</span>
+                <i class="bi bi-chevron-expand small text-muted" aria-hidden="true"></i>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li><h6 class="dropdown-header">Switch school</h6></li>
                 @foreach($availableSchools as $avSchool)
-                <li>
-                  <form method="POST" action="{{ route('school.switch') }}">
-                    @csrf
-                    <input type="hidden" name="school_id" value="{{ $avSchool->id }}">
-                    <button type="submit" class="dropdown-item {{ $user->current_school_id == $avSchool->id ? 'active' : '' }}">
+                  <li>
+                    <form method="POST" action="{{ route('school.switch') }}">
+                      @csrf
+                      <input type="hidden" name="school_id" value="{{ $avSchool->id }}">
+                      <button type="submit" class="dropdown-item {{ $user->current_school_id == $avSchool->id ? 'active' : '' }}">
+                        <i class="bi {{ $user->current_school_id == $avSchool->id ? 'bi-check2' : 'bi-building' }}" aria-hidden="true"></i>
                         {{ $avSchool->name }}
-                    </button>
-                  </form>
-                </li>
+                      </button>
+                    </form>
+                  </li>
                 @endforeach
               </ul>
             </div>
-            @endif
+          @endif
 
-            <div class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <div class="avatar avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width:32px; height:32px;">
-                  {{ substr(Auth::user()->name, 0, 1) }}
-                </div>
-                <span class="d-none d-md-block">{{ Auth::user()->name }}</span>
-              </a>
-              <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="bi bi-person me-2"></i>Profile</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li>
-                  <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-2"></i>Log Out</button>
-                  </form>
+          <button class="icon-btn" type="button" data-theme-toggle aria-label="Switch colour theme">
+            <i class="bi bi-moon" aria-hidden="true"></i>
+          </button>
+
+          <div class="dropdown">
+            <button class="user-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account menu">
+              <span class="initials">{{ $initials }}</span>
+              <span class="user-name d-none d-md-inline">{{ $user->name }}</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li class="px-2 pt-2 pb-2 mb-1 border-bottom">
+                <div class="fw-semibold text-truncate">{{ $user->name }}</div>
+                <div class="small text-muted text-truncate">{{ $user->email }}</div>
+              </li>
+              @if($availableSchools->count() > 1 || $user->hasRole('Super Admin'))
+                <li class="d-sm-none">
+                  <h6 class="dropdown-header">Switch school</h6>
+                  @foreach($availableSchools as $avSchool)
+                    <form method="POST" action="{{ route('school.switch') }}">
+                      @csrf
+                      <input type="hidden" name="school_id" value="{{ $avSchool->id }}">
+                      <button type="submit" class="dropdown-item {{ $user->current_school_id == $avSchool->id ? 'active' : '' }}">
+                        <i class="bi bi-building" aria-hidden="true"></i>{{ $avSchool->name }}
+                      </button>
+                    </form>
+                  @endforeach
+                  <hr class="dropdown-divider">
                 </li>
-              </ul>
-            </div>
+              @endif
+              <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="bi bi-person" aria-hidden="true"></i>Profile &amp; password</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <form method="POST" action="{{ route('logout') }}">
+                  @csrf
+                  <button type="submit" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right" aria-hidden="true"></i>Sign out</button>
+                </form>
+              </li>
+            </ul>
           </div>
         </div>
-      </nav>
+      </header>
 
-      <!-- Main Content -->
-      <main class="dashboard-content">
-        <div class="container-fluid px-3 px-lg-4 py-4">
+      <main class="dashboard-content" id="main">
+        <div class="content-wrap">
           @isset($header)
-              {{ $header }}
+            {{ $header }}
           @endisset
 
           {{ $slot }}
@@ -92,16 +124,35 @@
       </main>
 
       <footer class="admin-footer">
-        <div class="container-fluid px-3 px-lg-4 d-flex justify-content-between align-items-center text-muted small">
-          <span>&copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.</span>
-          <span>School Management System</span>
+        <div class="footer-inner">
+          <span>&copy; {{ date('Y') }} {{ $currentSchool->name ?? config('app.name') }}</span>
+          <span>Signed in as {{ $roleName }}</span>
         </div>
       </footer>
     </div>
+
+    {{-- Phone / tablet bottom navigation --}}
+    <nav class="mobile-tabbar" aria-label="Quick navigation">
+      <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'active' : '' }}">
+        <i class="bi bi-house{{ request()->routeIs('dashboard') ? '-fill' : '' }}" aria-hidden="true"></i>Home
+      </a>
+      <a href="{{ route('students.index') }}" class="{{ request()->routeIs('students.*', 'guardians.*') ? 'active' : '' }}">
+        <i class="bi bi-people{{ request()->routeIs('students.*', 'guardians.*') ? '-fill' : '' }}" aria-hidden="true"></i>Students
+      </a>
+      <a href="{{ route('academic.attendance.index') }}" class="{{ request()->routeIs('academic.attendance.*') ? 'active' : '' }}">
+        <i class="bi bi-check2-square" aria-hidden="true"></i>Attendance
+      </a>
+      <a href="{{ route('academic.exams.index') }}" class="{{ request()->routeIs('academic.exams.*', 'academic.marks.*', 'academic.results.*') ? 'active' : '' }}">
+        <i class="bi bi-journal-text" aria-hidden="true"></i>Exams
+      </a>
+      <button type="button" data-sidebar-toggle aria-controls="adminSidebar" aria-label="Open full menu">
+        <i class="bi bi-grid" aria-hidden="true"></i>Menu
+      </button>
+    </nav>
   </div>
 
-  <!-- AdminHMD JS -->
   <script src="{{ asset('assets/js/bootstrap.bundle.min.js') }}"></script>
-  <script src="{{ asset('assets/js/main.js') }}"></script>
+  <script src="{{ asset('assets/js/app-shell.js') }}?v={{ @filemtime(public_path('assets/js/app-shell.js')) }}"></script>
+  @stack('scripts')
 </body>
 </html>
