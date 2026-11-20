@@ -9,7 +9,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Guardian extends Model
 {
-    use HasFactory, BelongsToSchool;
+    use HasFactory, BelongsToSchool, \Illuminate\Database\Eloquent\Concerns\HasUuids;
+
+    /** Only "uuid" is a generated GUID; "id" stays the auto-increment primary key. */
+    public function uniqueIds(): array
+    {
+        return ['uuid'];
+    }
+
+    /** URLs use the GUID: /guardians/{uuid}, /guardians/{uuid}/edit, ... */
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
+    }
 
     protected $fillable = [
         'school_id',

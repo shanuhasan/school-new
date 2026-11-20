@@ -111,7 +111,7 @@
                         <div class="tab-pane fade" id="guardians" role="tabpanel">
                             <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary pb-2">
                                 <h5 class="mb-0 text-light fw-semibold">Parents & Guardians</h5>
-                                <a href="{{ route('guardians.create', ['student_id' => $student->id]) }}" class="btn btn-sm btn-primary">
+                                <a href="{{ route('guardians.create', ['student' => $student->uuid]) }}" class="btn btn-sm btn-primary">
                                     <i class="bi bi-plus-lg"></i> Add guardian
                                 </a>
                             </div>

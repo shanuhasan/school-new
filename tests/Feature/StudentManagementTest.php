@@ -81,7 +81,7 @@ class StudentManagementTest extends TestCase
         $student = Student::where('admission_number', 'ADM-002')->first();
 
         // User 2 should not see User 1's student
-        $response = $this->actingAs($user2)->get('/students/' . $student->id);
+        $response = $this->actingAs($user2)->get('/students/' . $student->uuid);
         $response->assertStatus(404); // Global scope should hide it
     }
 
@@ -149,7 +149,7 @@ class StudentManagementTest extends TestCase
         $sibling->guardians()->attach($guardian->id, ['relationship' => 'Mother']);
 
         $this->actingAs($this->user)
-            ->get(route('guardians.create', ['student_id' => $student->id]))
+            ->get(route('guardians.create', ['student' => $student->uuid]))
             ->assertOk()
             ->assertSee('Choose existing')
             ->assertSee('Asha Verma')
@@ -181,7 +181,7 @@ class StudentManagementTest extends TestCase
         $student->guardians()->attach($guardian->id, ['relationship' => 'Mother']);
 
         $this->actingAs($this->user)
-            ->from(route('guardians.create', ['student_id' => $student->id]))
+            ->from(route('guardians.create', ['student' => $student->uuid]))
             ->post(route('students.guardians.store', $student), ['guardian_id' => $guardian->id, 'relationship' => 'Mother'])
             ->assertSessionHasErrors('guardian_id');
 
@@ -251,7 +251,7 @@ class StudentManagementTest extends TestCase
         $session = AcademicSession::create(['school_id' => $this->school->id, 'name' => '2023-2024', 'start_date' => '2023-09-01', 'end_date' => '2024-06-30']);
         $class = SchoolClass::create(['school_id' => $this->school->id, 'name' => 'Grade 10']);
 
-        $response = $this->actingAs($this->user)->post("/students/{$student->id}/enrollments", [
+        $response = $this->actingAs($this->user)->post("/students/{$student->uuid}/enrollments", [
             'academic_session_id' => $session->id,
             'school_class_id' => $class->id,
             'status' => 'active',
@@ -326,7 +326,7 @@ class StudentManagementTest extends TestCase
 
         $file = UploadedFile::fake()->create('birth_certificate.pdf', 100, 'application/pdf');
 
-        $response = $this->actingAs($this->user)->post("/students/{$student->id}/documents", [
+        $response = $this->actingAs($this->user)->post("/students/{$student->uuid}/documents", [
             'title' => 'Birth Certificate',
             'document' => $file,
         ]);

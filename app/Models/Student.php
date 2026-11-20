@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Traits\BelongsToSchool;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -11,7 +12,22 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Student extends Model
 {
-    use HasFactory, BelongsToSchool;
+    use HasFactory, BelongsToSchool, HasUuids;
+
+    /**
+     * Only the "uuid" column is a generated GUID; "id" stays the auto-increment primary key.
+     * HasUuids fills it automatically when a student is created (form, import, seeders...).
+     */
+    public function uniqueIds(): array
+    {
+        return ['uuid'];
+    }
+
+    /** URLs use the GUID: /students/{uuid}, /students/{uuid}/edit, ... */
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
+    }
 
     protected $fillable = [
         'school_id',

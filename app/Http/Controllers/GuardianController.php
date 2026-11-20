@@ -30,8 +30,9 @@ class GuardianController extends Controller
         $student = null;
         $existingGuardians = collect();
 
-        if ($request->filled('student_id')) {
-            $student = Student::findOrFail($request->student_id);
+        // ?student={uuid}: the student's public GUID, never the numeric id
+        if ($request->filled('student')) {
+            $student = Student::where('uuid', (string) $request->input('student'))->firstOrFail();
             abort_if($student->school_id !== Tenant::getSchoolId(), 404);
 
             // Guardians of this school not yet linked to the student (e.g. a sibling's parent)
@@ -99,7 +100,7 @@ class GuardianController extends Controller
     public function show(Guardian $guardian)
     {
         abort_if($guardian->school_id !== Tenant::getSchoolId(), 404);
-        $guardian->load('students');
+        $guardian->load(['students' => fn ($q) => $q->orderBy('first_name')->with(['enrollments.schoolClass', 'enrollments.section'])]);
         return view('guardians.show', compact('guardian'));
     }
 
