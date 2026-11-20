@@ -96,6 +96,12 @@
     </div>
 
     <div class="nav-group-label">Administration</div>
+    @role('Super Admin')
+    <a class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}" title="Users">
+      <span class="nav-icon"><i class="bi bi-person-gear" aria-hidden="true"></i></span>
+      <span class="nav-text">Users</span>
+    </a>
+    @endrole
     <div class="nav-item">
       <a class="nav-link {{ $setupOpen ? '' : 'collapsed' }}" href="#academicSubmenu" data-bs-toggle="collapse" role="button" aria-expanded="{{ $setupOpen ? 'true' : 'false' }}" aria-controls="academicSubmenu" title="Academic setup">
         <span class="nav-icon"><i class="bi bi-sliders2" aria-hidden="true"></i></span>

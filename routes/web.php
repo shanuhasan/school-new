@@ -17,6 +17,12 @@ Route::middleware('auth')->group(function () {
 
     // School Switcher
     Route::post('/school/switch', [\App\Http\Controllers\SchoolSwitcherController::class, 'switch'])->name('school.switch');
+
+    // "Login as" (impersonation) — Super Admin only; see ImpersonationController.
+    // stop() stays reachable while impersonating (the impersonated user isn't a Super Admin).
+    Route::get('/admin/users', [\App\Http\Controllers\Admin\UserAdminController::class, 'index'])->name('admin.users.index');
+    Route::post('/admin/impersonate/{user}', [\App\Http\Controllers\Admin\ImpersonationController::class, 'start'])->name('admin.impersonate.start');
+    Route::post('/admin/impersonate-stop', [\App\Http\Controllers\Admin\ImpersonationController::class, 'stop'])->name('admin.impersonate.stop');
 });
 
 Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext::class])->prefix('academic')->name('academic.')->group(function () {

@@ -33,6 +33,19 @@
     @include('layouts.adminhmd-sidebar', ['initials' => $initials, 'roleName' => $roleName, 'currentSchool' => $currentSchool])
 
     <div class="admin-main">
+      @if(session('impersonator_id'))
+        <div class="impersonation-bar" role="status">
+          <span><i class="bi bi-person-badge" aria-hidden="true"></i>
+            You are signed in as <strong>{{ $user->name }}</strong>
+            @if(session('impersonator_name')) &mdash; really {{ session('impersonator_name') }} @endif
+          </span>
+          <form method="POST" action="{{ route('admin.impersonate.stop') }}" class="m-0">
+            @csrf
+            <button type="submit" class="btn btn-sm"><i class="bi bi-box-arrow-left"></i> Stop &amp; return to my account</button>
+          </form>
+        </div>
+      @endif
+
       <header class="admin-topbar">
         <button class="icon-btn" type="button" data-sidebar-toggle aria-controls="adminSidebar" aria-expanded="true" aria-label="Toggle navigation">
           <i class="bi bi-layout-sidebar" aria-hidden="true"></i>
