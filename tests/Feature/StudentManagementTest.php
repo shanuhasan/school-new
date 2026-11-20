@@ -114,7 +114,125 @@ class StudentManagementTest extends TestCase
             'is_emergency_contact' => 1,
         ]);
         
-        $response->assertRedirect(route('students.show', $student));
+        $response->assertRedirect(route('students.show', ['student' => $student, 'tab' => 'guardians']));
+    }
+
+    private function makeStudent(string $admission, ?int $schoolId = null): Student
+    {
+        return Student::create([
+            'school_id' => $schoolId ?? $this->school->id,
+            'admission_number' => $admission,
+            'first_name' => 'Kid',
+            'last_name' => $admission,
+            'date_of_birth' => '2014-01-01',
+            'gender' => 'female',
+            'admission_date' => '2023-09-01',
+            'status' => 'active',
+        ]);
+    }
+
+    private function makeGuardian(?int $schoolId = null, string $phone = '9000000001'): Guardian
+    {
+        return Guardian::create([
+            'school_id' => $schoolId ?? $this->school->id,
+            'first_name' => 'Asha',
+            'last_name' => 'Verma',
+            'phone' => $phone,
+        ]);
+    }
+
+    public function test_create_form_lists_existing_guardians_not_yet_linked()
+    {
+        $sibling = $this->makeStudent('ADM-S1');
+        $student = $this->makeStudent('ADM-S2');
+        $guardian = $this->makeGuardian();
+        $sibling->guardians()->attach($guardian->id, ['relationship' => 'Mother']);
+
+        $this->actingAs($this->user)
+            ->get(route('guardians.create', ['student_id' => $student->id]))
+            ->assertOk()
+            ->assertSee('Choose existing')
+            ->assertSee('Asha Verma')
+            ->assertSee('Guardian of Kid ADM-S1');
+    }
+
+    public function test_can_link_existing_guardian_to_second_student()
+    {
+        $sibling = $this->makeStudent('ADM-S1');
+        $student = $this->makeStudent('ADM-S2');
+        $guardian = $this->makeGuardian();
+        $sibling->guardians()->attach($guardian->id, ['relationship' => 'Mother']);
+
+        $response = $this->actingAs($this->user)->post(route('students.guardians.store', $student), [
+            'guardian_id' => $guardian->id,
+            'relationship' => 'Mother',
+            'is_emergency_contact' => 1,
+        ]);
+
+        $response->assertRedirect(route('students.show', ['student' => $student, 'tab' => 'guardians']));
+        $this->assertDatabaseHas('guardian_student', ['guardian_id' => $guardian->id, 'student_id' => $student->id, 'is_emergency_contact' => 1]);
+        $this->assertSame(1, Guardian::count(), 'Linking must not create a duplicate guardian record');
+    }
+
+    public function test_cannot_link_same_guardian_twice()
+    {
+        $student = $this->makeStudent('ADM-S1');
+        $guardian = $this->makeGuardian();
+        $student->guardians()->attach($guardian->id, ['relationship' => 'Mother']);
+
+        $this->actingAs($this->user)
+            ->from(route('guardians.create', ['student_id' => $student->id]))
+            ->post(route('students.guardians.store', $student), ['guardian_id' => $guardian->id, 'relationship' => 'Mother'])
+            ->assertSessionHasErrors('guardian_id');
+
+        $this->assertSame(1, $student->guardians()->count());
+    }
+
+    public function test_cannot_link_guardian_from_another_school()
+    {
+        $otherSchool = School::factory()->create();
+        $foreignGuardian = $this->makeGuardian($otherSchool->id);
+        $student = $this->makeStudent('ADM-S1');
+
+        $this->actingAs($this->user)
+            ->post(route('students.guardians.store', $student), ['guardian_id' => $foreignGuardian->id, 'relationship' => 'Father'])
+            ->assertSessionHasErrors('guardian_id');
+
+        $this->assertDatabaseMissing('guardian_student', ['guardian_id' => $foreignGuardian->id]);
+    }
+
+    public function test_can_unlink_guardian_without_deleting_it()
+    {
+        $student = $this->makeStudent('ADM-S1');
+        $guardian = $this->makeGuardian();
+        $student->guardians()->attach($guardian->id, ['relationship' => 'Mother']);
+
+        $this->actingAs($this->user)
+            ->delete(route('students.guardians.destroy', [$student, $guardian]))
+            ->assertRedirect(route('students.show', ['student' => $student, 'tab' => 'guardians']));
+
+        $this->assertDatabaseMissing('guardian_student', ['guardian_id' => $guardian->id, 'student_id' => $student->id]);
+        $this->assertDatabaseHas('guardians', ['id' => $guardian->id]);
+    }
+
+    public function test_creating_guardian_with_existing_phone_warns_first_then_allows_on_confirm()
+    {
+        $student = $this->makeStudent('ADM-S1');
+        $this->makeGuardian(null, '9000000001');
+
+        $payload = [
+            'first_name' => 'Asha',
+            'last_name' => 'Verma',
+            'phone' => '9000000001',
+            'student_id' => $student->id,
+            'relationship' => 'Mother',
+        ];
+
+        $this->actingAs($this->user)->post('/guardians', $payload)->assertSessionHasErrors('phone');
+        $this->assertSame(1, Guardian::count());
+
+        $this->actingAs($this->user)->post('/guardians', $payload + ['confirm_duplicate' => 1])->assertSessionHasNoErrors();
+        $this->assertSame(2, Guardian::count());
     }
 
     public function test_can_enroll_student()
@@ -144,6 +262,51 @@ class StudentManagementTest extends TestCase
             'academic_session_id' => $session->id,
             'school_class_id' => $class->id,
         ]);
+    }
+
+    public function test_enrollment_accepts_section_of_chosen_class_and_rejects_other_class_section()
+    {
+        $student = $this->makeStudent('ADM-E1');
+        $session = AcademicSession::create(['school_id' => $this->school->id, 'name' => '2026-2027', 'start_date' => '2026-04-01', 'end_date' => '2027-03-31']);
+        $grade5 = SchoolClass::create(['school_id' => $this->school->id, 'name' => 'Grade 5']);
+        $grade6 = SchoolClass::create(['school_id' => $this->school->id, 'name' => 'Grade 6']);
+        $grade5A = \App\Models\Section::create(['school_class_id' => $grade5->id, 'name' => 'A']);
+        $grade6B = \App\Models\Section::create(['school_class_id' => $grade6->id, 'name' => 'B']);
+
+        // Section from a different class is rejected
+        $this->actingAs($this->user)
+            ->post(route('students.enrollments.store', $student), [
+                'academic_session_id' => $session->id,
+                'school_class_id' => $grade5->id,
+                'section_id' => $grade6B->id,
+                'status' => 'active',
+            ])
+            ->assertSessionHasErrorsIn('enrollment', 'section_id');
+        $this->assertDatabaseCount('enrollments', 0);
+
+        // Matching section is accepted
+        $this->actingAs($this->user)
+            ->post(route('students.enrollments.store', $student), [
+                'academic_session_id' => $session->id,
+                'school_class_id' => $grade5->id,
+                'section_id' => $grade5A->id,
+                'status' => 'active',
+            ])
+            ->assertRedirect(route('students.show', ['student' => $student, 'tab' => 'enrollments']));
+        $this->assertDatabaseHas('enrollments', ['student_id' => $student->id, 'section_id' => $grade5A->id]);
+    }
+
+    public function test_student_page_provides_sections_grouped_by_class()
+    {
+        $student = $this->makeStudent('ADM-E2');
+        $grade5 = SchoolClass::create(['school_id' => $this->school->id, 'name' => 'Grade 5']);
+        $section = \App\Models\Section::create(['school_class_id' => $grade5->id, 'name' => 'Rose']);
+
+        $this->actingAs($this->user)
+            ->get(route('students.show', $student))
+            ->assertOk()
+            ->assertSee('enroll-sections-data', false)
+            ->assertSee('"' . $grade5->id . '":[{"id":' . $section->id . ',"name":"Rose"}]', false);
     }
 
     public function test_document_security_and_upload()

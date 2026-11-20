@@ -111,34 +111,43 @@
                         <div class="tab-pane fade" id="guardians" role="tabpanel">
                             <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary pb-2">
                                 <h5 class="mb-0 text-light fw-semibold">Parents & Guardians</h5>
-                                <a href="{{ route('guardians.create', ['student_id' => $student->id]) }}" class="btn btn-sm btn-primary rounded-pill px-3">
-                                    <i class="bi bi-plus-lg"></i> Add Guardian
+                                <a href="{{ route('guardians.create', ['student_id' => $student->id]) }}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-plus-lg"></i> Add guardian
                                 </a>
                             </div>
-                            
+
                             @if($student->guardians->count() > 0)
                                 <div class="row g-3">
                                     @foreach($student->guardians as $guardian)
                                         <div class="col-md-6">
-                                            <div class="p-4 border border-secondary rounded h-100 bg-opacity-10 bg-white">
-                                                <div class="d-flex justify-content-between mb-3">
-                                                    <h6 class="mb-0 fw-bold text-light fs-5">{{ $guardian->full_name }}</h6>
+                                            <div class="guardian-card">
+                                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                                    <div>
+                                                        <h6><a href="{{ route('guardians.show', $guardian) }}" class="text-body">{{ $guardian->full_name }}</a></h6>
+                                                        <p class="relation">{{ $guardian->pivot->relationship }}</p>
+                                                    </div>
                                                     @if($guardian->pivot->is_emergency_contact)
-                                                        <span class="badge bg-danger rounded-pill">Emergency</span>
+                                                        <span class="badge bg-danger">Emergency contact</span>
                                                     @endif
                                                 </div>
-                                                <p class="text-info small mb-3 fw-medium text-uppercase tracking-wider">{{ $guardian->pivot->relationship }}</p>
-                                                <div class="small mb-2 text-light"><i class="bi bi-telephone text-secondary me-2"></i> {{ $guardian->phone }}</div>
+                                                <div class="meta"><i class="bi bi-telephone"></i>{{ $guardian->phone }}</div>
                                                 @if($guardian->email)
-                                                    <div class="small mb-1 text-light"><i class="bi bi-envelope text-secondary me-2"></i> {{ $guardian->email }}</div>
+                                                    <div class="meta text-truncate"><i class="bi bi-envelope"></i>{{ $guardian->email }}</div>
                                                 @endif
+                                                <form action="{{ route('students.guardians.destroy', [$student, $guardian]) }}" method="POST" class="mt-3"
+                                                      onsubmit="return confirm('Remove {{ addslashes($guardian->full_name) }} from {{ addslashes($student->full_name) }}? The guardian record itself will be kept.');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg"></i> Remove</button>
+                                                </form>
                                             </div>
                                         </div>
                                     @endforeach
                                 </div>
                             @else
-                                <div class="text-center py-4 text-muted">
-                                    <p>No guardians attached to this student.</p>
+                                <div class="empty-note">
+                                    <i class="bi bi-people" aria-hidden="true"></i>
+                                    No guardians linked yet. Use <strong>Add guardian</strong> to pick an existing parent or create a new one.
                                 </div>
                             @endif
                         </div>
@@ -264,49 +273,61 @@
                     <h5 class="modal-title">New Enrollment</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form action="{{ route('students.enrollments.store', $student) }}" method="POST">
+                @php
+                    $enrollErrors = $errors->getBag('enrollment');
+                    $enrollClasses = \App\Models\SchoolClass::with(['sections' => fn ($q) => $q->orderBy('name')])->orderBy('name')->get();
+                @endphp
+                <form action="{{ route('students.enrollments.store', $student) }}" method="POST" id="enrollForm" data-has-errors="{{ $enrollErrors->any() ? '1' : '0' }}">
                     @csrf
                     <div class="modal-body">
+                        @if($enrollErrors->any())
+                            <div class="alert alert-danger">
+                                <ul>@foreach($enrollErrors->all() as $msg)<li>{{ $msg }}</li>@endforeach</ul>
+                            </div>
+                        @endif
                         <div class="mb-3">
-                            <label class="form-label">Academic Session <span class="text-danger">*</span></label>
-                            <select name="academic_session_id" class="form-select" required>
-                                <option value="">Select Session</option>
-                                @foreach(\App\Models\AcademicSession::all() as $session)
-                                    <option value="{{ $session->id }}">{{ $session->name }}</option>
+                            <label class="form-label" for="enroll-session">Academic session <span class="text-danger">*</span></label>
+                            <select name="academic_session_id" id="enroll-session" class="form-select {{ $enrollErrors->has('academic_session_id') ? 'is-invalid' : '' }}" required>
+                                <option value="">Select session</option>
+                                @foreach(\App\Models\AcademicSession::orderByDesc('start_date')->get() as $session)
+                                    <option value="{{ $session->id }}" @selected(old('academic_session_id') == $session->id)>{{ $session->name }}</option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Class <span class="text-danger">*</span></label>
-                            <select name="school_class_id" class="form-select" required>
-                                <option value="">Select Class</option>
-                                @foreach(\App\Models\SchoolClass::all() as $cls)
-                                    <option value="{{ $cls->id }}">{{ $cls->name }}</option>
-                                @endforeach
-                            </select>
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6">
+                                <label class="form-label" for="enroll-class">Class <span class="text-danger">*</span></label>
+                                <select name="school_class_id" id="enroll-class" class="form-select {{ $enrollErrors->has('school_class_id') ? 'is-invalid' : '' }}" required>
+                                    <option value="">Select class</option>
+                                    @foreach($enrollClasses as $cls)
+                                        <option value="{{ $cls->id }}" @selected(old('school_class_id') == $cls->id)>{{ $cls->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label" for="enroll-section">Section</label>
+                                <select name="section_id" id="enroll-section" class="form-select {{ $enrollErrors->has('section_id') ? 'is-invalid' : '' }}" data-selected="{{ old('section_id') }}">
+                                    <option value="">Select class first</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Section</label>
-                            <select name="section_id" class="form-select">
-                                <option value="">No Section</option>
-                                @foreach(\App\Models\Section::all() as $sec)
-                                    <option value="{{ $sec->id }}">{{ $sec->name }}</option>
-                                @endforeach
-                            </select>
+                            <label class="form-label" for="enroll-roll">Roll number</label>
+                            <input type="text" name="roll_number" id="enroll-roll" class="form-control" value="{{ old('roll_number') }}">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Roll Number</label>
-                            <input type="text" name="roll_number" class="form-control">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Status <span class="text-danger">*</span></label>
-                            <select name="status" class="form-select" required>
-                                <option value="active">Active</option>
-                                <option value="promoted">Promoted</option>
-                                <option value="dropped">Dropped</option>
+                            <label class="form-label" for="enroll-status">Status <span class="text-danger">*</span></label>
+                            <select name="status" id="enroll-status" class="form-select" required>
+                                <option value="active" @selected(old('status', 'active') === 'active')>Active</option>
+                                <option value="promoted" @selected(old('status') === 'promoted')>Promoted</option>
+                                <option value="dropped" @selected(old('status') === 'dropped')>Dropped</option>
                             </select>
                         </div>
                     </div>
+                    {{-- Sections per class, used to fill the Section dropdown when a class is chosen --}}
+                    <script type="application/json" id="enroll-sections-data">
+                        {!! json_encode($enrollClasses->mapWithKeys(fn ($c) => [$c->id => $c->sections->map(fn ($s) => ['id' => $s->id, 'name' => $s->name])->values()]), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}
+                    </script>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                         <button type="submit" class="btn btn-primary">Enroll Student</button>
@@ -345,4 +366,54 @@
             </div>
         </div>
     </div>
+
+    @push('scripts')
+    <script>
+        // Open the tab named in ?tab= (e.g. after linking a guardian)
+        (function () {
+            var tab = new URLSearchParams(window.location.search).get('tab');
+            var btn = tab && document.getElementById(tab + '-tab');
+            if (btn) bootstrap.Tab.getOrCreateInstance(btn).show();
+        })();
+
+        // New enrollment: show only the sections of the chosen class
+        (function () {
+            var classSelect = document.getElementById('enroll-class');
+            var sectionSelect = document.getElementById('enroll-section');
+            var dataEl = document.getElementById('enroll-sections-data');
+            if (!classSelect || !sectionSelect || !dataEl) return;
+            var sectionsByClass = JSON.parse(dataEl.textContent || '{}');
+
+            function fillSections(selectedId) {
+                var list = sectionsByClass[classSelect.value] || [];
+                sectionSelect.innerHTML = '';
+
+                var first = document.createElement('option');
+                first.value = '';
+                first.textContent = !classSelect.value ? 'Select class first'
+                    : (list.length ? 'No section' : 'This class has no sections');
+                sectionSelect.appendChild(first);
+
+                list.forEach(function (s) {
+                    var opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = s.name;
+                    if (String(s.id) === String(selectedId)) opt.selected = true;
+                    sectionSelect.appendChild(opt);
+                });
+                sectionSelect.disabled = !classSelect.value || list.length === 0;
+            }
+
+            classSelect.addEventListener('change', function () { fillSections(''); });
+            fillSections(sectionSelect.getAttribute('data-selected'));
+
+            // Re-open the modal with the user's input and errors after a failed submit
+            if (document.getElementById('enrollForm').getAttribute('data-has-errors') === '1') {
+                var enrollTab = document.getElementById('enrollments-tab');
+                if (enrollTab) bootstrap.Tab.getOrCreateInstance(enrollTab).show();
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('enrollModal')).show();
+            }
+        })();
+    </script>
+    @endpush
 </x-app-layout>

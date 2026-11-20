@@ -84,6 +84,10 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext:
     Route::resource('guardians', \App\Http\Controllers\GuardianController::class);
     
     // Enrollments
+    // Link / unlink an existing guardian to a student
+    Route::post('students/{student}/guardians', [\App\Http\Controllers\StudentGuardianController::class, 'store'])->name('students.guardians.store');
+    Route::delete('students/{student}/guardians/{guardian}', [\App\Http\Controllers\StudentGuardianController::class, 'destroy'])->name('students.guardians.destroy');
+
     Route::post('students/{student}/enrollments', [\App\Http\Controllers\EnrollmentController::class, 'store'])->name('students.enrollments.store');
     Route::put('students/{student}/enrollments/{enrollment}', [\App\Http\Controllers\EnrollmentController::class, 'update'])->name('students.enrollments.update');
     Route::delete('students/{student}/enrollments/{enrollment}', [\App\Http\Controllers\EnrollmentController::class, 'destroy'])->name('students.enrollments.destroy');

@@ -37,10 +37,22 @@ class GuardianController extends Controller
     public function create(Request $request)
     {
         $student = null;
+        $existingGuardians = collect();
+
         if ($request->filled('student_id')) {
             $student = Student::findOrFail($request->student_id);
+            abort_if($student->school_id !== Tenant::getSchoolId(), 404);
+
+            // Guardians of this school not yet linked to the student (e.g. a sibling's parent)
+            $existingGuardians = Guardian::where('school_id', Tenant::getSchoolId())
+                ->whereDoesntHave('students', fn ($q) => $q->whereKey($student->id))
+                ->with('students:id,first_name,last_name')
+                ->orderBy('first_name')
+                ->orderBy('last_name')
+                ->get();
         }
-        return view('guardians.create', compact('student'));
+
+        return view('guardians.create', compact('student', 'existingGuardians'));
     }
 
     /**
@@ -62,6 +74,20 @@ class GuardianController extends Controller
 
         $validated['school_id'] = Tenant::getSchoolId();
 
+        // Avoid duplicate guardian records: if this phone is already on file, point the user to it.
+        if ($request->filled('student_id') && ! $request->boolean('confirm_duplicate')) {
+            $match = Guardian::where('school_id', $validated['school_id'])
+                ->where('phone', $validated['phone'])
+                ->first();
+
+            if ($match) {
+                return back()
+                    ->withInput()
+                    ->with('duplicate_guardian_id', $match->id)
+                    ->withErrors(['phone' => "{$match->full_name} already uses this phone number. Link the existing guardian instead, or save again to create a separate record."]);
+            }
+        }
+
         $guardian = Guardian::create($validated);
 
         if ($request->filled('student_id')) {
@@ -70,7 +96,7 @@ class GuardianController extends Controller
                 'relationship' => $validated['relationship'],
                 'is_emergency_contact' => $request->boolean('is_emergency_contact'),
             ]);
-            return redirect()->route('students.show', $student)->with('success', 'Guardian added successfully.');
+            return redirect()->route('students.show', ['student' => $student, 'tab' => 'guardians'])->with('success', 'Guardian added successfully.');
         }
 
         return redirect()->route('guardians.index')->with('success', 'Guardian created successfully.');

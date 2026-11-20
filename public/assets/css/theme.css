@@ -827,6 +827,31 @@ hr { border-color: var(--line); opacity: 1; }
 .empty-note { padding: 1.5rem 0.5rem; text-align: center; color: var(--muted); font-size: 0.875rem; }
 .empty-note i { display: block; font-size: 1.5rem; color: var(--line-strong); margin-bottom: 0.4rem; }
 
+/* Guardian picker (link existing guardian to a student) */
+.guardian-pick-list { max-height: 360px; overflow-y: auto; border: 1px solid var(--line); border-radius: var(--radius); padding: 0.35rem; background: var(--surface-2); }
+.guardian-pick { display: flex; align-items: center; gap: 0.8rem; padding: 0.7rem 0.8rem; border: 1px solid transparent; border-radius: 8px; cursor: pointer; transition: background-color 0.12s ease, border-color 0.12s ease; }
+.guardian-pick + .guardian-pick { margin-top: 2px; }
+.guardian-pick:hover { background: var(--surface); border-color: var(--line); }
+.guardian-pick:has(input:checked) { background: var(--brand-soft); border-color: var(--brand); }
+.guardian-pick .form-check-input { margin: 0; flex-shrink: 0; }
+.guardian-pick-body { display: flex; flex-direction: column; min-width: 0; line-height: 1.35; }
+.guardian-pick-body strong { font-weight: 600; font-size: 0.9rem; }
+.guardian-pick-body span { font-size: 0.8rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
+.guardian-pick-body .guardian-pick-kids { color: var(--brand); font-weight: 500; }
+
+/* Guardian card on student profile */
+.guardian-card { position: relative; padding: 1.1rem 1.2rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); height: 100%; }
+.guardian-card h6 { font-size: 1rem; font-weight: 600; margin: 0; }
+.guardian-card .relation { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin: 0.2rem 0 0.75rem; }
+.guardian-card .meta { font-size: 0.85rem; color: var(--ink-2); margin-bottom: 0.25rem; }
+.guardian-card .meta i { color: var(--muted); margin-right: 0.4rem; }
+
+/* Views written for the old dark theme use .text-light / .border-secondary for body text and rules */
+.text-light, .text-white-50 { color: var(--ink) !important; }
+.btn .text-light, .badge.text-light { color: inherit !important; }
+.border-secondary { border-color: var(--line) !important; }
+.bg-opacity-10.bg-white { background: var(--surface-2) !important; }
+
 /* Legacy metric cards still referenced in a few views */
 .metric-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); }
 
