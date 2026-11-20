@@ -146,7 +146,7 @@ class HomeworkManagementTest extends TestCase
         
         $this->assertDatabaseHas('homework_submissions', [
             'homework_id' => $homework->id,
-            'student_id' => $this->student->id,
+            'student_id' => $this->student->studentProfile->id,
             'submission_text' => 'Here is my answer',
             'status' => 'submitted',
         ]);
@@ -170,7 +170,7 @@ class HomeworkManagementTest extends TestCase
         $submission = HomeworkSubmission::create([
             'school_id' => $this->school->id,
             'homework_id' => $homework->id,
-            'student_id' => $this->student->id,
+            'student_id' => $this->student->studentProfile->id,
             'submission_text' => 'My answer',
             'status' => 'submitted',
             'submitted_at' => now(),
@@ -189,5 +189,85 @@ class HomeworkManagementTest extends TestCase
             'teacher_feedback' => 'Good job',
             'status' => 'evaluated',
         ]);
+    }
+
+    private function makeHomework(array $overrides = []): Homework
+    {
+        return Homework::create($overrides + [
+            'school_id' => $this->school->id,
+            'academic_session_id' => $this->session->id,
+            'school_class_id' => $this->schoolClass->id,
+            'section_id' => $this->section->id,
+            'subject_id' => $this->subject->id,
+            'teacher_id' => $this->teacher->id,
+            'title' => 'Math Assignment',
+            'description' => 'Complete chapter 1',
+            'homework_date' => now(),
+            'due_date' => now()->addDays(2),
+        ]);
+    }
+
+    public function test_student_sees_own_submission_and_teacher_sees_student_name()
+    {
+        $homework = $this->makeHomework();
+
+        $this->actingAs($this->student)->post(route('academic.homework.submissions.store', $homework), ['submission_text' => 'First try']);
+        // Re-submitting updates the same row instead of creating a second one
+        $this->actingAs($this->student)->post(route('academic.homework.submissions.store', $homework), ['submission_text' => 'Second try']);
+
+        $this->assertSame(1, HomeworkSubmission::count());
+        $submission = HomeworkSubmission::first();
+        $this->assertSame('Second try', $submission->submission_text);
+        $this->assertSame('John Doe', $submission->student->full_name);
+
+        $this->actingAs($this->student)->get(route('academic.homework.show', $homework))
+            ->assertOk()
+            ->assertSee('My Submission')
+            ->assertSee('Submitted on');
+
+        $this->actingAs($this->teacher)->get(route('academic.homework.show', $homework))
+            ->assertOk()
+            ->assertSee('John Doe');
+    }
+
+    public function test_student_downloads_own_attachment()
+    {
+        $homework = $this->makeHomework();
+        $this->actingAs($this->student)->post(route('academic.homework.submissions.store', $homework), [
+            'attachment' => UploadedFile::fake()->create('answer.pdf', 50),
+        ]);
+
+        $submission = HomeworkSubmission::firstOrFail();
+        $this->actingAs($this->student)->get(route('academic.homework.submissions.download', $submission))
+            ->assertOk()
+            ->assertDownload('john-doe_submission.pdf');
+    }
+
+    public function test_student_of_another_class_cannot_submit()
+    {
+        $otherClass = SchoolClass::factory()->create(['school_id' => $this->school->id, 'name' => 'Class IX']);
+        $otherSection = Section::factory()->create(['school_class_id' => $otherClass->id, 'name' => 'B']);
+        $homework = $this->makeHomework(['school_class_id' => $otherClass->id, 'section_id' => $otherSection->id]);
+
+        $this->actingAs($this->student)
+            ->post(route('academic.homework.submissions.store', $homework), ['submission_text' => 'Sneaky'])
+            ->assertForbidden();
+
+        $this->assertSame(0, HomeworkSubmission::count());
+    }
+
+    public function test_user_without_student_record_cannot_submit()
+    {
+        $homework = $this->makeHomework();
+        $noProfile = User::factory()->create(['current_school_id' => $this->school->id]);
+        $noProfile->assignRole('Student');
+        $noProfile->givePermissionTo('homework.submit');
+        $noProfile->schools()->attach($this->school->id);
+
+        $this->actingAs($noProfile)
+            ->post(route('academic.homework.submissions.store', $homework), ['submission_text' => 'Hello'])
+            ->assertForbidden();
+
+        $this->assertSame(0, HomeworkSubmission::count());
     }
 }

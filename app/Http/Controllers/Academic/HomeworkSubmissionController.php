@@ -29,9 +29,25 @@ class HomeworkSubmissionController extends Controller
             return back()->withErrors(['submission' => 'Please provide text or an attachment.']);
         }
 
+        // homework_submissions.student_id references the students table, so resolve the
+        // signed-in user's student record (not the user id).
+        $student = $request->user()->studentProfile;
+        if (! $student || $student->school_id !== $homework->school_id) {
+            abort(403, 'Your account is not linked to a student record in this school.');
+        }
+
+        // A student may only submit homework set for their own class (and section, when the homework has one)
+        $enrolled = $student->enrollments()
+            ->where('academic_session_id', $homework->academic_session_id)
+            ->where('school_class_id', $homework->school_class_id)
+            ->when($homework->section_id, fn ($q) => $q->where(fn ($q) => $q->where('section_id', $homework->section_id)->orWhereNull('section_id')))
+            ->where('status', 'active')
+            ->exists();
+        abort_unless($enrolled, 403, 'This homework is not set for your class.');
+
         $submission = HomeworkSubmission::firstOrNew([
             'homework_id' => $homework->id,
-            'student_id' => auth()->id(),
+            'student_id' => $student->id,
         ]);
         
         // Prevent editing if evaluated
@@ -96,7 +112,7 @@ class HomeworkSubmissionController extends Controller
         
         return Storage::disk('local')->download(
             $submission->attachment_path, 
-            $submission->student->name . '_submission.' . pathinfo($submission->attachment_path, PATHINFO_EXTENSION)
+            \Illuminate\Support\Str::slug($submission->student?->full_name ?: 'student') . '_submission.' . pathinfo($submission->attachment_path, PATHINFO_EXTENSION)
         );
     }
 }

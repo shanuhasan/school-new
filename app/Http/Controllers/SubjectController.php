@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Homework;
 use App\Models\Subject;
+use App\Models\Teacher;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
@@ -52,7 +54,23 @@ class SubjectController extends Controller
     public function show(Subject $subject)
     {
         $this->authorize('view', $subject);
-        return view('academic.subjects.show', compact('subject'));
+
+        $subject->load(['classes' => fn ($q) => $q->orderBy('name')]);
+
+        $teachers = Teacher::forCurrentSchool()
+            ->whereHas('subjects', fn ($q) => $q->whereKey($subject->id))
+            ->with(['user', 'classes' => fn ($q) => $q->orderBy('name')])
+            ->get()
+            ->sortBy(fn ($t) => $t->user?->name)
+            ->values();
+
+        $homework = Homework::where('subject_id', $subject->id)
+            ->with(['schoolClass', 'section'])
+            ->orderByDesc('due_date')
+            ->limit(6)
+            ->get();
+
+        return view('academic.subjects.show', compact('subject', 'teachers', 'homework'));
     }
 
     public function edit(Subject $subject)

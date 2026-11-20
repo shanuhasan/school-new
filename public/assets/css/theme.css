@@ -786,6 +786,7 @@ html[data-theme="dark"] .btn-close { filter: invert(1) grayscale(1) brightness(1
 hr { border-color: var(--line); opacity: 1; }
 
 code { color: var(--ink-2); background: var(--surface-3); padding: 0.1em 0.4em; border-radius: 4px; font-size: 0.82em; }
+.min-w-0 { min-width: 0; }
 .table-compact > tbody > tr > td { padding-top: 0.5rem; padding-bottom: 0.5rem; }
 
 /* --------------------------------------------------------------------------

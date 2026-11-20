@@ -35,10 +35,11 @@
                     <tbody>
                         @forelse($classes as $class)
                             <tr>
-                                <td class="fw-semibold">{{ $class->name }}</td>
+                                <td><a href="{{ route('academic.classes.show', $class) }}" class="fw-semibold text-body">{{ $class->name }}</a></td>
                                 <td>{{ $class->level }}</td>
                                 <td>{{ $class->created_at->format('Y-m-d') }}</td>
                                 <td class="text-end">
+                                    <a href="{{ route('academic.classes.show', $class) }}" class="btn btn-sm btn-outline-info" title="View" aria-label="View"><i class="bi bi-eye"></i></a>
                                     <a href="{{ route('academic.classes.edit', $class) }}" class="btn btn-sm btn-outline-primary" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
                                     <form action="{{ route('academic.classes.destroy', $class) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure?');">
                                         @csrf

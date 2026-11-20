@@ -55,7 +55,7 @@
             @if(auth()->user()->hasRole('Student'))
                 <!-- Student Submission Form -->
                 @php
-                    $mySubmission = $homework->submissions->where('student_id', auth()->id())->first();
+                    $mySubmission = $homework->submissions->where('student_id', auth()->user()->studentProfile?->id ?? 0)->first();
                 @endphp
                 <div class="panel border-primary border-2">
                     <div class="panel-body p-4">
@@ -108,7 +108,8 @@
                 </div>
             </div>
             
-            @can('manage', App\Models\Homework::class)
+            {{-- Teacher who set this homework, or staff with homework.manage ("manage" is not a HomeworkPolicy ability) --}}
+            @can('update', $homework)
                 <div class="panel">
                     <div class="panel-body p-4">
                         <h5 class="fw-bold mb-4">Student Submissions</h5>
@@ -129,10 +130,10 @@
                                             <td>
                                                 <div class="d-flex align-items-center">
                                                     <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
-                                                        {{ substr($sub->student->name, 0, 1) }}
+                                                        {{ mb_substr($sub->student?->first_name ?? '?', 0, 1) }}
                                                     </div>
                                                     <div>
-                                                        <span class="fw-semibold d-block">{{ $sub->student->name }}</span>
+                                                        <span class="fw-semibold d-block">{{ $sub->student?->full_name ?? 'Unknown student' }}</span>
                                                     </div>
                                                 </div>
                                             </td>
@@ -159,7 +160,7 @@
                                                                 @method('PATCH')
                                                                 <div class="modal-body py-0">
                                                                     <div class="mb-3 p-3 bg-light rounded text-dark">
-                                                                        <div class="mb-2"><strong>Student:</strong> {{ $sub->student->name }}</div>
+                                                                        <div class="mb-2"><strong>Student:</strong> {{ $sub->student?->full_name ?? 'Unknown student' }}</div>
                                                                         <div class="mb-2"><strong>Answer:</strong> <br>{{ $sub->submission_text ?: 'No text provided.' }}</div>
                                                                         @if($sub->attachment_path)
                                                                             <div>

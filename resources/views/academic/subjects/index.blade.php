@@ -34,9 +34,10 @@
                     <tbody>
                         @forelse($subjects as $subject)
                             <tr>
-                                <td class="fw-semibold">{{ $subject->name }}</td>
+                                <td><a href="{{ route('academic.subjects.show', $subject) }}" class="fw-semibold text-body">{{ $subject->name }}</a></td>
                                 <td><span class="badge bg-secondary">{{ $subject->code }}</span></td>
                                 <td class="text-end">
+                                    <a href="{{ route('academic.subjects.show', $subject) }}" class="btn btn-sm btn-outline-info" title="View" aria-label="View"><i class="bi bi-eye"></i></a>
                                     <a href="{{ route('academic.subjects.edit', $subject) }}" class="btn btn-sm btn-outline-primary" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
                                     <form action="{{ route('academic.subjects.destroy', $subject) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure?');">
                                         @csrf

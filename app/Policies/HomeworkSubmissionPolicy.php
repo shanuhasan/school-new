@@ -27,12 +27,12 @@ class HomeworkSubmissionPolicy
 
         // Student can only view their own submission
         if ($user->hasRole('Student')) {
-            return $user->id === $homeworkSubmission->student_id;
+            return $this->ownsSubmission($user, $homeworkSubmission);
         }
 
         // Parent can view their children's submissions
         if ($user->hasRole('Parent')) {
-            return $user->children()->where('users.id', $homeworkSubmission->student_id)->exists();
+            return (bool) $user->guardianProfile?->students()->whereKey($homeworkSubmission->student_id)->exists();
         }
 
         // Teachers can view submissions for homework they created (or all if admin)
@@ -62,7 +62,7 @@ class HomeworkSubmissionPolicy
 
         // Only the student can update their own submission (if it's not already evaluated)
         if ($user->hasRole('Student')) {
-            return $user->id === $homeworkSubmission->student_id && 
+            return $this->ownsSubmission($user, $homeworkSubmission) && 
                    $homeworkSubmission->status !== 'evaluated';
         }
 
@@ -96,5 +96,13 @@ class HomeworkSubmissionPolicy
     public function delete(User $user, HomeworkSubmission $homeworkSubmission): bool
     {
         return false; // Submissions shouldn't be deleted, only updated or reset
+    }
+
+    /** homework_submissions.student_id is a students.id; compare it with the user's student record. */
+    private function ownsSubmission(User $user, HomeworkSubmission $submission): bool
+    {
+        $studentId = $user->studentProfile?->id;
+
+        return $studentId !== null && $studentId === (int) $submission->student_id;
     }
 }

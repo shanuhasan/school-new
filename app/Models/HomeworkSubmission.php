@@ -32,8 +32,9 @@ class HomeworkSubmission extends Model
         return $this->belongsTo(Homework::class, 'homework_id');
     }
 
+    /** student_id references students.id (see fix_student_foreign_keys_on_academic_tables). */
     public function student()
     {
-        return $this->belongsTo(User::class, 'student_id');
+        return $this->belongsTo(Student::class, 'student_id');
     }
 }
