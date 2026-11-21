@@ -132,6 +132,29 @@
             {{ $header }}
           @endisset
 
+          @if(session('new_login'))
+            @php $cred = session('new_login'); @endphp
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+              <div>
+                <strong>Login account created for {{ $cred['name'] }}.</strong>
+                Share these details — they appear only once. The account can change the password later under Profile.
+                <div class="d-flex flex-wrap gap-4 mt-2">
+                  <div><div class="small text-muted">Email</div><code>{{ $cred['email'] }}</code></div>
+                  @if(! empty($cred['password']))
+                    <div><div class="small text-muted">Temporary password</div><code>{{ $cred['password'] }}</code></div>
+                  @endif
+                </div>
+              </div>
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          @endif
+          @if(session('warning'))
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">{{ session('warning') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+          @endif
+          @if(session('error') && ! isset($hideGlobalError))
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">{{ session('error') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+          @endif
+
           {{ $slot }}
         </div>
       </main>

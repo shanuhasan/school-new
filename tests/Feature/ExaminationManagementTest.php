@@ -181,4 +181,39 @@ class ExaminationManagementTest extends TestCase
             'marks_obtained' => 85
         ]);
     }
+
+    public function test_marks_entry_shows_section_specific_subjects_with_and_without_section()
+    {
+        $examType = ExamType::create(['school_id' => $this->school->id, 'name' => 'Half Yearly']);
+        $exam = Exam::create([
+            'school_id' => $this->school->id, 'academic_session_id' => $this->session->id, 'exam_type_id' => $examType->id,
+            'name' => 'Half Yearly', 'start_date' => '2026-10-01', 'end_date' => '2026-10-05',
+        ]);
+        // Subject scheduled for a SPECIFIC section (the bug: it never showed unless the section was also picked)
+        ExamSubject::create([
+            'exam_id' => $exam->id, 'school_class_id' => $this->class->id, 'section_id' => $this->section->id,
+            'subject_id' => $this->subject->id, 'exam_date' => '2026-10-02', 'max_marks' => 100, 'passing_marks' => 40,
+        ]);
+
+        // Exam + class only (no section) must still list the subject
+        $this->actingAs($this->admin)
+            ->get(route('academic.marks.index', ['exam_id' => $exam->id, 'school_class_id' => $this->class->id]))
+            ->assertOk()
+            ->assertSee('Mathematics');
+
+        // With the matching section too
+        $this->actingAs($this->admin)
+            ->get(route('academic.marks.index', ['exam_id' => $exam->id, 'school_class_id' => $this->class->id, 'section_id' => $this->section->id]))
+            ->assertOk()
+            ->assertSee('Mathematics');
+    }
+
+    public function test_marks_entry_requires_permission()
+    {
+        $outsider = User::factory()->create(['current_school_id' => $this->school->id]);
+        $outsider->assignRole('Librarian'); // no marks.enter
+        $outsider->schools()->attach($this->school->id);
+
+        $this->actingAs($outsider)->get(route('academic.marks.index'))->assertForbidden();
+    }
 }

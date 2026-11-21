@@ -52,6 +52,23 @@
                         <dt class="small text-muted fw-medium">Address</dt>
                         <dd class="mb-0">{!! $guardian->address ? nl2br(e($guardian->address)) : '<span class="text-muted">Not provided</span>' !!}</dd>
                     </dl>
+
+                    <hr>
+                    <h6 class="fw-semibold mb-2"><i class="bi bi-box-arrow-in-right me-1"></i> Login access</h6>
+                    @if($guardian->user_id)
+                        <div class="small text-muted mb-1">Signs in with</div>
+                        <div class="fw-medium text-truncate">{{ optional($guardian->user)->email ?? $guardian->email }}</div>
+                        <span class="badge bg-success mt-2">Account active</span>
+                    @elseif($guardian->email)
+                        <p class="small text-muted mb-2">No login account yet.</p>
+                        <form method="POST" action="{{ route('guardians.login-account', $guardian) }}"
+                              onsubmit="return confirm('Create a login account for {{ addslashes($guardian->full_name) }} ({{ $guardian->email }})?');">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-outline-primary w-100"><i class="bi bi-person-plus"></i> Create login account</button>
+                        </form>
+                    @else
+                        <p class="small text-muted mb-0">Add an email address (Edit) to enable a login account.</p>
+                    @endif
                 </div>
             </div>
         </div>

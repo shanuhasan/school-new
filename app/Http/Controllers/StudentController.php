@@ -71,7 +71,47 @@ class StudentController extends Controller
 
         $student = Student::create($validated);
 
+        // Optional login account for the student
+        if ($request->boolean('create_login')) {
+            $request->validate(['email' => 'required|email'], [], ['email' => 'email']);
+            try {
+                $result = app(\App\Actions\CreateLoginAccount::class)->forStudent($student, $request->filled('login_password') ? $request->input('login_password') : null);
+                session()->flash('new_login', $this->loginFlash($result, $student->full_name));
+            } catch (\RuntimeException $e) {
+                session()->flash('warning', 'Student saved, but the login account could not be created: ' . $e->getMessage());
+            }
+        }
+
         return redirect()->route('students.show', $student)->with('success', 'Student created successfully.');
+    }
+
+    /** Create a login account for an existing student (from the student profile). */
+    public function createLoginAccount(Request $request, Student $student, \App\Actions\CreateLoginAccount $accounts)
+    {
+        abort_if($student->school_id !== Tenant::getSchoolId(), 404);
+
+        $request->validate(['login_password' => 'nullable|string|min:8|max:255']);
+
+        if (! $student->email) {
+            return back()->with('error', 'Add an email address to this student first, then create their login.');
+        }
+
+        try {
+            $result = $accounts->forStudent($student, $request->filled('login_password') ? $request->input('login_password') : null);
+
+            if ($result['existed']) {
+                return back()->with('error', 'This student already has a login account.');
+            }
+
+            return back()->with('new_login', $this->loginFlash($result, $student->full_name));
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    private function loginFlash(array $result, string $name): array
+    {
+        return ['name' => $name, 'email' => $result['user']->email, 'password' => $result['password']];
     }
 
     /**

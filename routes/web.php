@@ -108,6 +108,10 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext:
     Route::post('guardians/import', [\App\Http\Controllers\GuardianImportController::class, 'store'])->name('guardians.import.store');
     Route::get('guardians/export', \App\Http\Controllers\GuardianExportController::class)->name('guardians.export');
 
+    // Create a login account for an existing student / guardian
+    Route::post('students/{student}/login-account', [\App\Http\Controllers\StudentController::class, 'createLoginAccount'])->name('students.login-account');
+    Route::post('guardians/{guardian}/login-account', [\App\Http\Controllers\GuardianController::class, 'createLoginAccount'])->name('guardians.login-account');
+
     Route::resource('students', \App\Http\Controllers\StudentController::class);
     Route::resource('guardians', \App\Http\Controllers\GuardianController::class);
     

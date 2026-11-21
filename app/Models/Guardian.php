@@ -46,6 +46,12 @@ class Guardian extends Model
             ->withTimestamps();
     }
 
+    /** The optional login account linked to this guardian. */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
     /** Search shared by the guardians page and the Excel export. */
     public function scopeFilter(\Illuminate\Database\Eloquent\Builder $query, array $filters): \Illuminate\Database\Eloquent\Builder
     {

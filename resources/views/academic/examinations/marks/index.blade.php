@@ -36,7 +36,9 @@
                     <select name="exam_subject_id" class="form-select">
                         <option value="">Select Subject</option>
                         @foreach($examSubjects as $subj)
-                            <option value="{{ $subj->id }}" {{ request('exam_subject_id') == $subj->id ? 'selected' : '' }}>{{ $subj->subject->name }} (Max: {{ $subj->max_marks }})</option>
+                            <option value="{{ $subj->id }}" {{ request('exam_subject_id') == $subj->id ? 'selected' : '' }}>
+                                {{ $subj->subject->name ?? 'Subject' }}@if($subj->section) · {{ $subj->section->name }}@endif (Max: {{ rtrim(rtrim($subj->max_marks, '0'), '.') }})
+                            </option>
                         @endforeach
                     </select>
                 </div>
@@ -44,16 +46,36 @@
                     <button type="submit" class="btn btn-primary w-100">Load</button>
                 </div>
             </form>
+
+            @if(request()->filled(['exam_id', 'school_class_id']) && $examSubjects->isEmpty())
+                <div class="empty-note mt-3">
+                    <i class="bi bi-journal-x" aria-hidden="true"></i>
+                    No subjects are scheduled for this class in this exam yet.
+                    <div class="mt-2"><a href="{{ route('academic.exams.show', request('exam_id')) }}" class="btn btn-sm btn-light"><i class="bi bi-calendar-plus"></i> Schedule subjects on this exam</a></div>
+                </div>
+            @elseif(request()->filled('exam_id') && ! request()->filled('exam_subject_id') && $examSubjects->isNotEmpty())
+                <p class="small text-muted mt-3 mb-0">Choose a subject above and press <strong>Load</strong> to enter marks.</p>
+            @endif
         </div>
     </div>
 
-    @if(request()->filled('exam_subject_id'))
+    @if(request()->filled('exam_subject_id') && $selectedSubject)
     <div class="panel">
         <div class="panel-body p-4">
+            <div class="panel-header d-flex flex-wrap justify-content-between align-items-center mb-3">
+                <div>
+                    <h2 class="h6 mb-0">{{ $selectedSubject->subject->name ?? 'Subject' }} — {{ $selectedSubject->schoolClass->name ?? '' }}@if($selectedSubject->section) · Section {{ $selectedSubject->section->name }}@endif</h2>
+                    <span class="small text-muted">Max marks {{ rtrim(rtrim($selectedSubject->max_marks, '0'), '.') }} · Pass {{ rtrim(rtrim($selectedSubject->passing_marks, '0'), '.') }}</span>
+                </div>
+                <span class="badge bg-secondary">{{ $students->count() }} {{ \Illuminate\Support\Str::plural('student', $students->count()) }}</span>
+            </div>
             <form action="{{ route('academic.marks.store') }}" method="POST">
                 @csrf
                 <input type="hidden" name="exam_subject_id" value="{{ request('exam_subject_id') }}">
-                
+
+                @if($students->isEmpty())
+                    <div class="empty-note"><i class="bi bi-people" aria-hidden="true"></i>No active students enrolled in this class/section for the current session.</div>
+                @else
                 <div class="table-responsive mb-4">
                     <table class="table table-hover table-striped">
                         <thead>
@@ -71,20 +93,16 @@
                                 @endphp
                                 <tr>
                                     <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="avatar avatar-sm me-3">
-                                                <div class="avatar-title rounded-circle bg-soft-primary text-primary">
-                                                    {{ substr($student->name, 0, 1) }}
-                                                </div>
-                                            </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="initials">{{ mb_substr($student->first_name, 0, 1) }}{{ mb_substr($student->last_name, 0, 1) }}</span>
                                             <div>
-                                                <h6 class="mb-0">{{ $student->full_name }}</h6>
+                                                <div class="fw-semibold">{{ $student->full_name }}</div>
                                                 <small class="text-muted">{{ $student->admission_number }}</small>
                                             </div>
                                         </div>
                                     </td>
                                     <td style="width: 150px;">
-                                        <input type="number" step="0.01" name="marks[{{ $student->id }}][obtained]" class="form-control form-control-sm" value="{{ $mark ? $mark->marks_obtained : '' }}" max="100" min="0">
+                                        <input type="number" step="0.01" name="marks[{{ $student->id }}][obtained]" class="form-control form-control-sm" value="{{ $mark ? rtrim(rtrim($mark->marks_obtained, '0'), '.') : '' }}" max="{{ $selectedSubject->max_marks }}" min="0">
                                     </td>
                                     <td style="width: 100px;" class="text-center">
                                         <input type="checkbox" name="marks[{{ $student->id }}][is_absent]" value="1" class="form-check-input" {{ $mark && $mark->is_absent ? 'checked' : '' }}>
@@ -97,10 +115,11 @@
                         </tbody>
                     </table>
                 </div>
-                
+
                 <div class="text-end">
                     <button type="submit" class="btn btn-success px-5"><i class="bi bi-save"></i> Save Marks</button>
                 </div>
+                @endif
             </form>
         </div>
     </div>

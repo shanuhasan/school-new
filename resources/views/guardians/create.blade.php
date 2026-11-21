@@ -198,6 +198,20 @@
                                     </div>
                                 </div>
                             @endif
+
+                            <div class="col-12"><hr class="my-1"></div>
+                            <div class="col-12">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="create_login" value="1" id="g_create_login" @checked(old('create_login'))>
+                                    <label class="form-check-label" for="g_create_login">Create a login account so this guardian can sign in</label>
+                                </div>
+                                <div id="g-login-fields">
+                                    <label class="form-label">Password <span class="text-muted">(optional)</span></label>
+                                    <input type="text" name="login_password" class="form-control @error('login_password') is-invalid @enderror" placeholder="Leave blank to auto-generate" value="{{ old('login_password') }}" style="max-width:360px">
+                                    @error('login_password') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                                    <div class="form-text">Requires the email above. If blank, a temporary password is generated and shown once.</div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="d-flex justify-content-end gap-2 border-top pt-3">
@@ -245,4 +259,15 @@
         </script>
         @endpush
     @endif
+
+    @push('scripts')
+    <script>
+        (function () {
+            var cb = document.getElementById('g_create_login'), box = document.getElementById('g-login-fields');
+            if (!cb || !box) return;
+            function sync() { box.style.display = cb.checked ? '' : 'none'; }
+            cb.addEventListener('change', sync); sync();
+        })();
+    </script>
+    @endpush
 </x-app-layout>

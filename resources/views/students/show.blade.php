@@ -66,6 +66,27 @@
                     </ul>
                 </div>
             </div>
+
+            {{-- Login account --}}
+            <div class="panel mt-3">
+                <div class="panel-body p-3">
+                    <h6 class="fw-semibold mb-2"><i class="bi bi-box-arrow-in-right me-1"></i> Login access</h6>
+                    @if($student->user_id)
+                        <div class="small text-muted mb-1">Signs in with</div>
+                        <div class="fw-medium text-truncate">{{ optional($student->user)->email ?? $student->email }}</div>
+                        <span class="badge bg-success mt-2">Account active</span>
+                    @elseif($student->email)
+                        <p class="small text-muted mb-2">No login account yet. Create one so this student can sign in.</p>
+                        <form method="POST" action="{{ route('students.login-account', $student) }}"
+                              onsubmit="return confirm('Create a login account for {{ addslashes($student->full_name) }} ({{ $student->email }})?');">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-outline-primary w-100"><i class="bi bi-person-plus"></i> Create login account</button>
+                        </form>
+                    @else
+                        <p class="small text-muted mb-0">Add an email address (Edit profile) to enable a login account.</p>
+                    @endif
+                </div>
+            </div>
         </div>
 
         <!-- Main Content Tabs -->

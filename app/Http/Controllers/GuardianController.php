@@ -82,6 +82,17 @@ class GuardianController extends Controller
 
         $guardian = Guardian::create($validated);
 
+        // Optional login account for the guardian
+        if ($request->boolean('create_login')) {
+            $request->validate(['email' => 'required|email'], [], ['email' => 'email']);
+            try {
+                $result = app(\App\Actions\CreateLoginAccount::class)->forGuardian($guardian, $request->filled('login_password') ? $request->input('login_password') : null);
+                session()->flash('new_login', ['name' => $guardian->full_name, 'email' => $result['user']->email, 'password' => $result['password']]);
+            } catch (\RuntimeException $e) {
+                session()->flash('warning', 'Guardian saved, but the login account could not be created: ' . $e->getMessage());
+            }
+        }
+
         if ($request->filled('student_id')) {
             $student = Student::findOrFail($request->student_id);
             $student->guardians()->attach($guardian->id, [
@@ -142,5 +153,29 @@ class GuardianController extends Controller
         abort_if($guardian->school_id !== Tenant::getSchoolId(), 404);
         $guardian->delete();
         return back()->with('success', 'Guardian deleted successfully.');
+    }
+
+    /** Create a login account for an existing guardian (from the guardian profile). */
+    public function createLoginAccount(Request $request, Guardian $guardian, \App\Actions\CreateLoginAccount $accounts)
+    {
+        abort_if($guardian->school_id !== Tenant::getSchoolId(), 404);
+
+        $request->validate(['login_password' => 'nullable|string|min:8|max:255']);
+
+        if (! $guardian->email) {
+            return back()->with('error', 'Add an email address to this guardian first, then create their login.');
+        }
+
+        try {
+            $result = $accounts->forGuardian($guardian, $request->filled('login_password') ? $request->input('login_password') : null);
+
+            if ($result['existed']) {
+                return back()->with('error', 'This guardian already has a login account.');
+            }
+
+            return back()->with('new_login', ['name' => $guardian->full_name, 'email' => $result['user']->email, 'password' => $result['password']]);
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
     }
 }

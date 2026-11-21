@@ -73,6 +73,12 @@ class Student extends Model
         return $this->hasMany(StudentDocument::class);
     }
 
+    /** The optional login account linked to this student. */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
     /**
      * List filters shared by the students page and the Excel export.
      * Keys: search, class_id, section_id, session_id, status.

@@ -94,11 +94,34 @@
                     </div>
                 </div>
 
+                <h5 class="mb-3 mt-2 text-primary border-bottom pb-2">Login account</h5>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" name="create_login" value="1" id="create_login" @checked(old('create_login'))>
+                    <label class="form-check-label" for="create_login">Create a login account so this student can sign in</label>
+                </div>
+                <div class="row g-3 mb-2" id="login-fields">
+                    <div class="col-md-6">
+                        <label class="form-label">Password <span class="text-muted">(optional)</span></label>
+                        <input type="text" name="login_password" class="form-control @error('login_password') is-invalid @enderror" placeholder="Leave blank to auto-generate" value="{{ old('login_password') }}">
+                        @error('login_password') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        <div class="form-text">Requires the email above. If blank, a temporary password is generated and shown once.</div>
+                    </div>
+                </div>
+
                 <div class="d-flex justify-content-end gap-2 border-top pt-3">
                     <a href="{{ route('students.index') }}" class="btn btn-secondary">Cancel</a>
                     <button type="submit" class="btn btn-primary">Save Student</button>
                 </div>
             </form>
+            @push('scripts')
+            <script>
+                (function () {
+                    var cb = document.getElementById('create_login'), box = document.getElementById('login-fields');
+                    function sync() { box.style.display = cb.checked ? '' : 'none'; }
+                    cb.addEventListener('change', sync); sync();
+                })();
+            </script>
+            @endpush
         </div>
     </div>
 </x-app-layout>
