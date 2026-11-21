@@ -74,6 +74,49 @@ class FinanceModuleTest extends TestCase
             ->assertOk()->assertSee('FEE RECEIPT')->assertSee('Green Valley School')->assertSee('Riya Rao');
     }
 
+    public function test_fee_can_be_waived_fully_and_partially()
+    {
+        $student = $this->student();
+        $fee = Fee::create(['school_id' => $this->school->id, 'student_id' => $student->id, 'title' => 'Tuition', 'amount' => 1000, 'status' => 'unpaid']);
+
+        // Partial waive: 300 off → still owes 700, status partial
+        $this->actingAs($this->accountant)->post(route('fees.waive', $fee), ['amount' => 300, 'reason' => 'Sibling concession'])
+            ->assertRedirect(route('fees.show', $fee));
+        $fee->refresh();
+        $this->assertEquals(300.00, $fee->waived_amount);
+        $this->assertEquals(700.00, $fee->balance);
+        $this->assertSame('partial', $fee->status);
+        $this->assertStringContainsString('Sibling concession', $fee->waive_reason);
+
+        // Waive the rest → fully waived
+        $this->actingAs($this->accountant)->post(route('fees.waive', $fee), ['amount' => 700, 'reason' => 'Scholarship']);
+        $fee->refresh();
+        $this->assertEquals(0.00, $fee->balance);
+        $this->assertSame('waived', $fee->status);
+
+        // Can't waive more than the balance, and reason is required
+        $fee2 = Fee::create(['school_id' => $this->school->id, 'student_id' => $student->id, 'title' => 'Exam', 'amount' => 500, 'status' => 'unpaid']);
+        $this->actingAs($this->accountant)->post(route('fees.waive', $fee2), ['amount' => 9999, 'reason' => 'x'])->assertSessionHasErrors('amount');
+        $this->actingAs($this->accountant)->post(route('fees.waive', $fee2), ['amount' => 100])->assertSessionHasErrors('reason');
+
+        // The waived amount shows on the printable slip
+        $this->actingAs($this->accountant)->get(route('fees.slip', $fee))->assertOk()->assertSee('Waived')->assertSee('Scholarship');
+    }
+
+    public function test_waiving_requires_refund_permission()
+    {
+        $student = $this->student();
+        $fee = Fee::create(['school_id' => $this->school->id, 'student_id' => $student->id, 'title' => 'T', 'amount' => 100, 'status' => 'unpaid']);
+
+        // Librarian has no fee permissions
+        $lib = User::factory()->create(['current_school_id' => $this->school->id]);
+        $lib->assignRole('Librarian');
+        $lib->schools()->attach($this->school->id);
+
+        $this->actingAs($lib)->post(route('fees.waive', $fee), ['amount' => 50, 'reason' => 'x'])->assertForbidden();
+        $this->assertEquals(0.00, $fee->fresh()->waived_amount);
+    }
+
     public function test_fee_of_another_school_is_not_accessible()
     {
         $other = School::factory()->create();

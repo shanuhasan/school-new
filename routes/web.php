@@ -91,6 +91,7 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext:
 
     Route::get('fees/{fee}/slip', [\App\Http\Controllers\FeeController::class, 'slip'])->name('fees.slip');
     Route::post('fees/{fee}/collect', [\App\Http\Controllers\FeeController::class, 'collect'])->name('fees.collect');
+    Route::post('fees/{fee}/waive', [\App\Http\Controllers\FeeController::class, 'waive'])->name('fees.waive');
     Route::resource('fees', \App\Http\Controllers\FeeController::class)->except(['edit', 'update']);
 
     Route::get('salaries/{salary}/slip', [\App\Http\Controllers\SalaryController::class, 'slip'])->name('salaries.slip');

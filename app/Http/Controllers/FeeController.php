@@ -148,6 +148,28 @@ class FeeController extends Controller
         return redirect()->route('fees.show', $fee)->with('success', 'Payment recorded.');
     }
 
+    /** Waive (maaf) part or all of the outstanding balance, with a reason. */
+    public function waive(Request $request, Fee $fee)
+    {
+        $this->can($request, 'fees.refund');
+        abort_if($fee->school_id !== Tenant::getSchoolId(), 404);
+
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:0.01|max:' . max(0.01, $fee->balance),
+            'reason' => 'required|string|max:255',
+        ], [
+            'amount.max' => 'You can waive at most the outstanding balance (' . number_format($fee->balance, 2) . ').',
+            'reason.required' => 'Please give a reason for waiving the fee.',
+        ]);
+
+        $fee->waived_amount = round((float) $fee->waived_amount + (float) $validated['amount'], 2);
+        $fee->waive_reason = trim(($fee->waive_reason ? $fee->waive_reason . '; ' : '') . $validated['reason']);
+        $fee->syncStatus();
+        $fee->save();
+
+        return redirect()->route('fees.show', $fee)->with('success', 'Fee waived: ' . number_format($validated['amount'], 2) . '.');
+    }
+
     public function slip(Request $request, Fee $fee)
     {
         $this->can($request, 'fees.view');

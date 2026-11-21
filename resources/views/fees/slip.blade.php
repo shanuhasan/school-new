@@ -23,7 +23,7 @@
         .totals td { border: 0; padding: 4px 10px; }
         .totals .grand td { border-top: 2px solid #1f5640; font-weight: 700; font-size: 15px; padding-top: 8px; }
         .status { font-weight: 700; }
-        .status.paid { color: #237a4f; } .status.partial { color: #9a5b06; } .status.unpaid { color: #b3261e; }
+        .status.paid { color: #237a4f; } .status.partial { color: #9a5b06; } .status.unpaid { color: #b3261e; } .status.waived { color: #1f5f8b; }
         .sign { display: flex; justify-content: space-between; margin-top: 50px; font-size: 12px; color: #555; }
         .sign div { border-top: 1px solid #999; padding-top: 4px; width: 180px; text-align: center; }
         .foot { margin-top: 22px; font-size: 11px; color: #999; text-align: center; }
@@ -67,6 +67,7 @@
                 <tr><td>{{ $fee->title }}</td><td class="num">{{ number_format($fee->amount, 2) }}</td></tr>
                 @if($fee->fine > 0)<tr><td>Fine</td><td class="num">{{ number_format($fee->fine, 2) }}</td></tr>@endif
                 @if($fee->discount > 0)<tr><td>Discount</td><td class="num">− {{ number_format($fee->discount, 2) }}</td></tr>@endif
+                @if($fee->waived_amount > 0)<tr><td>Waived{{ $fee->waive_reason ? ' (' . $fee->waive_reason . ')' : '' }}</td><td class="num">− {{ number_format($fee->waived_amount, 2) }}</td></tr>@endif
             </tbody>
         </table>
 

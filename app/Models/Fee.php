@@ -13,23 +13,24 @@ class Fee extends Model
     protected $fillable = [
         'school_id', 'student_id', 'academic_session_id', 'fee_structure_id', 'school_class_id',
         'title', 'period', 'period_no',
-        'amount', 'discount', 'fine', 'paid_amount',
-        'due_date', 'paid_on', 'method', 'status', 'remarks', 'created_by',
+        'amount', 'discount', 'waived_amount', 'fine', 'paid_amount',
+        'due_date', 'paid_on', 'method', 'status', 'remarks', 'waive_reason', 'created_by',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'discount' => 'decimal:2',
+        'waived_amount' => 'decimal:2',
         'fine' => 'decimal:2',
         'paid_amount' => 'decimal:2',
         'due_date' => 'date',
         'paid_on' => 'date',
     ];
 
-    /** Total the student owes: base + fine − discount. */
+    /** Total the student owes: base + fine − discount − waiver. */
     public function getPayableAttribute(): float
     {
-        return round((float) $this->amount + (float) $this->fine - (float) $this->discount, 2);
+        return round((float) $this->amount + (float) $this->fine - (float) $this->discount - (float) $this->waived_amount, 2);
     }
 
     public function getBalanceAttribute(): float
@@ -37,14 +38,15 @@ class Fee extends Model
         return round($this->payable - (float) $this->paid_amount, 2);
     }
 
-    /** Recompute status from what's been paid vs what's payable. */
+    /** Recompute status from what's been paid / waived vs what's payable. */
     public function syncStatus(): void
     {
-        $this->status = match (true) {
-            $this->paid_amount <= 0 => 'unpaid',
-            $this->balance > 0 => 'partial',
-            default => 'paid',
-        };
+        if ($this->balance > 0) {
+            $this->status = ((float) $this->paid_amount > 0 || (float) $this->waived_amount > 0) ? 'partial' : 'unpaid';
+        } else {
+            // Nothing left to pay: "paid" if any money came in, otherwise it was fully waived
+            $this->status = (float) $this->paid_amount > 0 ? 'paid' : ((float) $this->waived_amount > 0 ? 'waived' : 'unpaid');
+        }
     }
 
     public function student()

@@ -1,5 +1,5 @@
 @php
-    $badge = ['paid' => 'bg-success', 'partial' => 'bg-warning text-dark', 'unpaid' => 'bg-danger'];
+    $badge = ['paid' => 'bg-success', 'partial' => 'bg-warning text-dark', 'unpaid' => 'bg-danger', 'waived' => 'bg-info'];
 @endphp
 <x-app-layout>
     <x-slot name="header">
