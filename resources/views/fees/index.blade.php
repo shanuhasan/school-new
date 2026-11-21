@@ -6,9 +6,12 @@
         <div class="page-heading">
             <div class="page-heading-copy">
                 <div><span class="eyebrow">Finance</span><h1 class="h3 mb-1">Fees</h1></div>
-                @can('fees.create')
-                <a href="{{ route('fees.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New fee</a>
-                @endcan
+                <div class="d-flex gap-2">
+                    <a href="{{ route('fees.report') }}" class="btn btn-light"><i class="bi bi-bar-chart-line"></i> Reports</a>
+                    @can('fees.create')
+                    <a href="{{ route('fees.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New fee</a>
+                    @endcan
+                </div>
             </div>
         </div>
     </x-slot>

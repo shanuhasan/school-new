@@ -94,6 +94,38 @@ class FinanceModuleTest extends TestCase
         $this->actingAs($student)->get(route('fees.create'))->assertForbidden();
     }
 
+    public function test_fee_report_totals_by_month_quarter_and_year()
+    {
+        $a = $this->student('ADM-A');
+        $b = $this->student('ADM-B');
+
+        // Year 2026
+        Fee::create(['school_id' => $this->school->id, 'student_id' => $a->id, 'title' => 'Jan', 'amount' => 1000, 'paid_amount' => 1000, 'due_date' => '2026-01-15', 'status' => 'paid']);
+        Fee::create(['school_id' => $this->school->id, 'student_id' => $a->id, 'title' => 'Apr', 'amount' => 500, 'paid_amount' => 200, 'due_date' => '2026-04-10', 'status' => 'partial']);
+        Fee::create(['school_id' => $this->school->id, 'student_id' => $b->id, 'title' => 'Apr-B', 'amount' => 800, 'paid_amount' => 0, 'due_date' => '2026-04-20', 'status' => 'unpaid']);
+        // Other year
+        Fee::create(['school_id' => $this->school->id, 'student_id' => $a->id, 'title' => 'Prev', 'amount' => 300, 'paid_amount' => 0, 'due_date' => '2025-11-01', 'status' => 'unpaid']);
+
+        $res = $this->actingAs($this->accountant)->get(route('fees.report', ['year' => 2026]));
+        $res->assertOk();
+
+        // Year 2026: billed 2300, collected 1200, outstanding 1100
+        $res->assertSee('2,300.00')->assertSee('1,200.00')->assertSee('1,100.00');
+        // A student that owes the most appears (B owes 800)
+        $res->assertSee('Rao');
+        // Other-year total is reachable from the "all years" table
+        $res->assertSee('2025');
+    }
+
+    public function test_student_cannot_view_fee_report()
+    {
+        $student = User::factory()->create(['current_school_id' => $this->school->id]);
+        $student->assignRole('Student');
+        $student->schools()->attach($this->school->id);
+
+        $this->actingAs($student)->get(route('fees.report'))->assertForbidden();
+    }
+
     /* ---------------- Salary ---------------- */
 
     public function test_accountant_can_create_pay_and_print_a_payslip()

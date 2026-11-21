@@ -76,6 +76,7 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext:
 
 // Finance: Fees & Salary
 Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext::class])->group(function () {
+    Route::get('fees/report', [\App\Http\Controllers\FeeReportController::class, 'index'])->name('fees.report');
     Route::get('fees/{fee}/slip', [\App\Http\Controllers\FeeController::class, 'slip'])->name('fees.slip');
     Route::post('fees/{fee}/collect', [\App\Http\Controllers\FeeController::class, 'collect'])->name('fees.collect');
     Route::resource('fees', \App\Http\Controllers\FeeController::class)->except(['edit', 'update']);
