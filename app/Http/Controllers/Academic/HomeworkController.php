@@ -36,8 +36,9 @@ class HomeworkController extends Controller
                 $sessionId = \App\Models\AcademicSession::where('is_current', true)->where('school_id', \App\Facades\Tenant::getSchoolId())->value('id');
                 $enrollment = $profile->enrollments()->where('academic_session_id', $sessionId)->first();
                 if ($enrollment) {
+                    // Their section's homework plus any whole-class homework (section null)
                     $query->where('school_class_id', $enrollment->school_class_id)
-                          ->where('section_id', $enrollment->section_id);
+                          ->where(fn ($q) => $q->whereNull('section_id')->orWhere('section_id', $enrollment->section_id));
                 } else {
                     $query->whereRaw('1 = 0');
                 }
@@ -56,7 +57,7 @@ class HomeworkController extends Controller
                         if ($enrollment) {
                             $q->orWhere(function($sq) use ($enrollment) {
                                 $sq->where('school_class_id', $enrollment->school_class_id)
-                                   ->where('section_id', $enrollment->section_id);
+                                   ->where(fn ($w) => $w->whereNull('section_id')->orWhere('section_id', $enrollment->section_id));
                             });
                         }
                     }
@@ -69,7 +70,8 @@ class HomeworkController extends Controller
             $query->where('school_class_id', $request->school_class_id);
         }
         if ($request->filled('section_id')) {
-            $query->where('section_id', $request->section_id);
+            // Include whole-class homework, which applies to the chosen section too
+            $query->where(fn ($q) => $q->whereNull('section_id')->orWhere('section_id', $request->section_id));
         }
         
         $homeworks = $query->orderBy('due_date', 'desc')->paginate(15);
@@ -94,20 +96,36 @@ class HomeworkController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    /**
+     * Shared rules for creating/updating homework.
+     * An empty section means the whole class (all sections); a given section must belong to the class.
+     */
+    private function validateHomework(Request $request): array
     {
-        Gate::authorize('create', Homework::class);
-        
         $validated = $request->validate([
             'school_class_id' => 'required|exists:school_classes,id',
-            'section_id' => 'required|exists:sections,id',
+            'section_id' => ['nullable', \Illuminate\Validation\Rule::exists('sections', 'id')->where('school_class_id', (int) $request->input('school_class_id'))],
             'subject_id' => 'required|exists:subjects,id',
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'homework_date' => 'required|date',
             'due_date' => 'required|date|after_or_equal:homework_date',
             'attachment' => 'nullable|file|max:10240', // 10MB max
+        ], [
+            'section_id.exists' => 'The selected section does not belong to the chosen class.',
         ]);
+
+        // Coerce an empty section to null ("all sections")
+        $validated['section_id'] = $validated['section_id'] ?: null;
+
+        return $validated;
+    }
+
+    public function store(Request $request)
+    {
+        Gate::authorize('create', Homework::class);
+
+        $validated = $this->validateHomework($request);
 
         $homework = new Homework($validated);
         $homework->school_id = \App\Facades\Tenant::getSchoolId() ?? auth()->user()->current_school_id;
@@ -160,16 +178,7 @@ class HomeworkController extends Controller
     {
         Gate::authorize('update', $homework);
         
-        $validated = $request->validate([
-            'school_class_id' => 'required|exists:school_classes,id',
-            'section_id' => 'required|exists:sections,id',
-            'subject_id' => 'required|exists:subjects,id',
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
-            'homework_date' => 'required|date',
-            'due_date' => 'required|date|after_or_equal:homework_date',
-            'attachment' => 'nullable|file|max:10240', // 10MB max
-        ]);
+        $validated = $this->validateHomework($request);
 
         if ($request->hasFile('attachment')) {
             // Delete old file if exists

@@ -270,4 +270,65 @@ class HomeworkManagementTest extends TestCase
 
         $this->assertSame(0, HomeworkSubmission::count());
     }
+
+    public function test_teacher_can_create_homework_for_all_sections()
+    {
+        $this->actingAs($this->teacher)->post(route('academic.homework.store'), [
+            'school_class_id' => $this->schoolClass->id,
+            'section_id' => '',                     // All sections
+            'subject_id' => $this->subject->id,
+            'title' => 'Whole class task',
+            'description' => 'For everyone',
+            'homework_date' => now()->format('Y-m-d'),
+            'due_date' => now()->addDays(2)->format('Y-m-d'),
+        ])->assertRedirect(route('academic.homework.index'))->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('homework', ['title' => 'Whole class task', 'section_id' => null]);
+    }
+
+    public function test_class_wide_homework_is_visible_to_students_in_any_section()
+    {
+        // A whole-class homework (no section)
+        $classWide = $this->makeHomework(['section_id' => null, 'title' => 'Everyone reads chapter 2']);
+
+        // A student in a DIFFERENT section of the same class
+        $sectionB = Section::factory()->create(['school_class_id' => $this->schoolClass->id, 'name' => 'B']);
+        $userB = User::factory()->create(['current_school_id' => $this->school->id]);
+        $userB->assignRole('Student');
+        $userB->givePermissionTo('homework.view');
+        $userB->schools()->attach($this->school->id);
+        $profileB = $userB->studentProfile()->create([
+            'school_id' => $this->school->id, 'admission_number' => 'ADM-B', 'first_name' => 'Bina', 'last_name' => 'Roy',
+            'date_of_birth' => '2011-01-01', 'gender' => 'female', 'admission_date' => '2026-04-01', 'status' => 'active',
+        ]);
+        $profileB->enrollments()->create([
+            'school_id' => $this->school->id, 'academic_session_id' => $this->session->id,
+            'school_class_id' => $this->schoolClass->id, 'section_id' => $sectionB->id, 'roll_number' => '1',
+        ]);
+
+        // Section B student sees the whole-class homework
+        $this->actingAs($userB)->get(route('academic.homework.index'))
+            ->assertOk()->assertSee('Everyone reads chapter 2');
+
+        // And can submit it (not blocked by section)
+        $userB->givePermissionTo('homework.submit');
+        $this->actingAs($userB)
+            ->post(route('academic.homework.submissions.store', $classWide), ['submission_text' => 'Done'])
+            ->assertRedirect();
+        $this->assertDatabaseHas('homework_submissions', ['homework_id' => $classWide->id, 'student_id' => $profileB->id]);
+    }
+
+    public function test_homework_section_must_belong_to_the_class()
+    {
+        $otherClass = SchoolClass::factory()->create(['school_id' => $this->school->id, 'name' => 'Class IX']);
+        $foreignSection = Section::factory()->create(['school_class_id' => $otherClass->id, 'name' => 'Z']);
+
+        $this->actingAs($this->teacher)->post(route('academic.homework.store'), [
+            'school_class_id' => $this->schoolClass->id,
+            'section_id' => $foreignSection->id,
+            'subject_id' => $this->subject->id,
+            'title' => 'Bad', 'description' => 'x',
+            'homework_date' => now()->format('Y-m-d'), 'due_date' => now()->addDays(2)->format('Y-m-d'),
+        ])->assertSessionHasErrors('section_id');
+    }
 }

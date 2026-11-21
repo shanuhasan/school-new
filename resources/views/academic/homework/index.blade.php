@@ -46,7 +46,7 @@
                     <div class="card-body">
                         <div class="mb-3">
                             <small class="text-muted d-block">Class</small>
-                            <span class="fw-semibold">{{ $hw->schoolClass->name }} ({{ $hw->section->name }})</span>
+                            <span class="fw-semibold">{{ $hw->schoolClass->name }} ({{ $hw->section->name ?? 'All sections' }})</span>
                         </div>
                         <div class="mb-3">
                             <small class="text-muted d-block">Due Date</small>

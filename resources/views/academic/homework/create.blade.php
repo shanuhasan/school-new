@@ -27,11 +27,12 @@
                     </div>
                     
                     <div class="col-md-4">
-                        <label class="form-label">Section <span class="text-danger">*</span></label>
-                        <select name="section_id" id="section_id" class="form-select @error('section_id') is-invalid @enderror" required>
-                            <option value="">Select Section</option>
+                        <label class="form-label">Section</label>
+                        <select name="section_id" id="section_id" class="form-select @error('section_id') is-invalid @enderror">
+                            <option value="">All sections</option>
                         </select>
                         @error('section_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        <div class="form-text">Leave as “All sections” to set this homework for the whole class.</div>
                     </div>
 
                     <div class="col-md-4">
@@ -86,27 +87,30 @@
 </div>
 
 <script>
-document.getElementById('class_id').addEventListener('change', function() {
-    let classId = this.value;
-    let sectionSelect = document.getElementById('section_id');
-    sectionSelect.innerHTML = '<option value="">Loading...</option>';
-    
-    if(classId) {
+(function () {
+    const classSelect = document.getElementById('class_id');
+    const sectionSelect = document.getElementById('section_id');
+    const oldSection = "{{ old('section_id') }}";
+
+    function loadSections(classId, selected) {
+        if (!classId) { sectionSelect.innerHTML = '<option value="">All sections</option>'; return; }
+        sectionSelect.innerHTML = '<option value="">Loading…</option>';
         fetch(`/academic/classes/${classId}/sections`)
             .then(res => res.json())
             .then(data => {
-                sectionSelect.innerHTML = '<option value="">Select Section</option>';
-                data.forEach(section => {
-                    sectionSelect.innerHTML += `<option value="${section.id}">${section.name}</option>`;
+                sectionSelect.innerHTML = '<option value="">All sections</option>';
+                data.forEach(function (s) {
+                    const sel = (selected && String(selected) === String(s.id)) ? ' selected' : '';
+                    sectionSelect.innerHTML += `<option value="${s.id}"${sel}>${s.name}</option>`;
                 });
             })
-            .catch(err => {
-                console.error(err);
-                sectionSelect.innerHTML = '<option value="">Error loading sections</option>';
-            });
-    } else {
-        sectionSelect.innerHTML = '<option value="">Select Section</option>';
+            .catch(function () { sectionSelect.innerHTML = '<option value="">All sections</option>'; });
     }
-});
+
+    classSelect.addEventListener('change', function () { loadSections(this.value, null); });
+
+    // Re-populate after a validation error so the chosen section sticks
+    if (classSelect.value) loadSections(classSelect.value, oldSection);
+})();
 </script>
 </x-app-layout>

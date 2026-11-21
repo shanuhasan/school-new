@@ -25,12 +25,14 @@
                     </div>
                     
                     <div class="col-md-4">
-                        <label class="form-label">Section <span class="text-danger">*</span></label>
-                        <select name="section_id" id="section_id" class="form-select" required>
+                        <label class="form-label">Section</label>
+                        <select name="section_id" id="section_id" class="form-select">
+                            <option value="" {{ (old('section_id', $homework->section_id) == '' || old('section_id', $homework->section_id) === null) ? 'selected' : '' }}>All sections</option>
                             @foreach($sections as $s)
-                                <option value="{{ $s->id }}" {{ (old('section_id') ?? $homework->section_id) == $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
+                                <option value="{{ $s->id }}" {{ (string) old('section_id', $homework->section_id) === (string) $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
                             @endforeach
                         </select>
+                        <div class="form-text">“All sections” sets this for the whole class.</div>
                     </div>
 
                     <div class="col-md-4">

@@ -27,7 +27,7 @@
                         </li>
                         <li class="mb-3">
                             <span class="text-muted d-block small">Class & Section</span>
-                            <span class="fw-semibold">{{ $homework->schoolClass->name }} ({{ $homework->section->name }})</span>
+                            <span class="fw-semibold">{{ $homework->schoolClass->name }} ({{ $homework->section->name ?? 'All sections' }})</span>
                         </li>
                         <li class="mb-3">
                             <span class="text-muted d-block small">Teacher</span>
