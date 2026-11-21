@@ -341,4 +341,58 @@ class StudentManagementTest extends TestCase
         $downloadResponse->assertStatus(200);
         $downloadResponse->assertHeader('content-disposition');
     }
+
+    public function test_can_enrol_student_during_creation()
+    {
+        $session = AcademicSession::create(['school_id' => $this->school->id, 'name' => '2026-27', 'start_date' => '2026-04-01', 'end_date' => '2027-03-31', 'is_current' => true]);
+        $class = SchoolClass::create(['school_id' => $this->school->id, 'name' => 'Grade 1']);
+        $section = \App\Models\Section::create(['school_class_id' => $class->id, 'name' => 'A']);
+
+        $this->actingAs($this->user)->post('/students', [
+            'admission_number' => 'ADM-700', 'first_name' => 'Nima', 'last_name' => 'Dorji',
+            'date_of_birth' => '2015-01-01', 'gender' => 'female', 'admission_date' => '2026-04-01', 'status' => 'active',
+            'academic_session_id' => $session->id, 'school_class_id' => $class->id, 'section_id' => $section->id, 'roll_number' => '5',
+        ])->assertSessionHasNoErrors();
+
+        $student = Student::where('admission_number', 'ADM-700')->firstOrFail();
+        $this->assertDatabaseHas('enrollments', [
+            'student_id' => $student->id, 'academic_session_id' => $session->id,
+            'school_class_id' => $class->id, 'section_id' => $section->id, 'roll_number' => '5', 'status' => 'active',
+        ]);
+    }
+
+    public function test_student_created_without_enrollment_fields_has_no_enrollment()
+    {
+        $this->actingAs($this->user)->post('/students', [
+            'admission_number' => 'ADM-701', 'first_name' => 'No', 'last_name' => 'Class',
+            'date_of_birth' => '2015-01-01', 'gender' => 'male', 'admission_date' => '2026-04-01', 'status' => 'active',
+        ])->assertSessionHasNoErrors();
+
+        $student = Student::where('admission_number', 'ADM-701')->firstOrFail();
+        $this->assertSame(0, $student->enrollments()->count());
+    }
+
+    public function test_enrolment_validations_on_create()
+    {
+        $otherSchool = School::factory()->create();
+        $otherClass = SchoolClass::create(['school_id' => $otherSchool->id, 'name' => 'Foreign']);
+        $session = AcademicSession::create(['school_id' => $this->school->id, 'name' => '2026-27', 'start_date' => '2026-04-01', 'end_date' => '2027-03-31']);
+        $class = SchoolClass::create(['school_id' => $this->school->id, 'name' => 'Grade 1']);
+        $foreignSection = \App\Models\Section::create(['school_class_id' => $otherClass->id, 'name' => 'Z']);
+
+        $base = [
+            'admission_number' => 'ADM-702', 'first_name' => 'A', 'last_name' => 'B',
+            'date_of_birth' => '2015-01-01', 'gender' => 'male', 'admission_date' => '2026-04-01', 'status' => 'active',
+        ];
+
+        // Class without session is rejected
+        $this->actingAs($this->user)->post('/students', $base + ['school_class_id' => $class->id])
+            ->assertSessionHasErrors('academic_session_id');
+
+        // A section not belonging to the class is rejected
+        $this->actingAs($this->user)->post('/students', $base + ['academic_session_id' => $session->id, 'school_class_id' => $class->id, 'section_id' => $foreignSection->id])
+            ->assertSessionHasErrors('section_id');
+
+        $this->assertDatabaseMissing('students', ['admission_number' => 'ADM-702']);
+    }
 }

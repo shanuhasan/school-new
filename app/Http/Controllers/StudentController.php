@@ -35,7 +35,10 @@ class StudentController extends Controller
      */
     public function create()
     {
-        return view('students.create');
+        $sessions = AcademicSession::forCurrentSchool()->orderByDesc('is_current')->orderByDesc('start_date')->get();
+        $classes = SchoolClass::forCurrentSchool()->with(['sections' => fn ($q) => $q->orderBy('name')])->orderBy('name')->get();
+
+        return view('students.create', compact('sessions', 'classes'));
     }
 
     /**
@@ -43,11 +46,13 @@ class StudentController extends Controller
      */
     public function store(Request $request)
     {
+        $schoolId = Tenant::getSchoolId();
+
         $validated = $request->validate([
             'admission_number' => [
                 'required',
                 'string',
-                Rule::unique('students')->where('school_id', Tenant::getSchoolId()),
+                Rule::unique('students')->where('school_id', $schoolId),
             ],
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -60,16 +65,41 @@ class StudentController extends Controller
             'admission_date' => 'required|date',
             'status' => 'required|in:active,inactive',
             'photo' => 'nullable|image|max:2048',
+            // Optional enrollment at admission: class + session go together; section & roll are optional.
+            'school_class_id' => ['nullable', 'required_with:academic_session_id', Rule::exists('school_classes', 'id')->where('school_id', $schoolId)],
+            'academic_session_id' => ['nullable', 'required_with:school_class_id', Rule::exists('academic_sessions', 'id')->where('school_id', $schoolId)],
+            'section_id' => ['nullable', Rule::exists('sections', 'id')->where('school_class_id', (int) $request->input('school_class_id'))],
+            'roll_number' => 'nullable|string|max:50',
+        ], [
+            'school_class_id.required_with' => 'Choose a class to enrol the student.',
+            'academic_session_id.required_with' => 'Choose a session to enrol the student.',
+            'section_id.exists' => 'The selected section does not belong to the chosen class.',
         ]);
+
+        // Enrollment fields aren't part of the student record
+        $enrollment = \Illuminate\Support\Arr::only($validated, ['school_class_id', 'academic_session_id', 'section_id', 'roll_number']);
+        $validated = \Illuminate\Support\Arr::except($validated, ['school_class_id', 'academic_session_id', 'section_id', 'roll_number']);
 
         if ($request->hasFile('photo')) {
             $path = $this->uploadAndResizeImage($request->file('photo'), 'students/photos', 'public', 800, 800, 80);
             $validated['photo_path'] = $path;
         }
 
-        $validated['school_id'] = Tenant::getSchoolId();
+        $validated['school_id'] = $schoolId;
 
         $student = Student::create($validated);
+
+        // Optional enrollment at admission
+        if (! empty($enrollment['school_class_id'])) {
+            $student->enrollments()->create([
+                'school_id' => $schoolId,
+                'academic_session_id' => $enrollment['academic_session_id'],
+                'school_class_id' => $enrollment['school_class_id'],
+                'section_id' => $enrollment['section_id'] ?: null,
+                'roll_number' => $enrollment['roll_number'] ?: null,
+                'status' => 'active',
+            ]);
+        }
 
         // Optional login account for the student
         if ($request->boolean('create_login')) {

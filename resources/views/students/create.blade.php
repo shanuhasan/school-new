@@ -94,6 +94,47 @@
                     </div>
                 </div>
 
+                <h5 class="mb-3 mt-2 text-primary border-bottom pb-2">Enrollment <span class="text-muted small fw-normal">(optional)</span></h5>
+                @php $currentSession = ($sessions ?? collect())->firstWhere('is_current', true); @endphp
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <label class="form-label">Session</label>
+                        <select name="academic_session_id" id="enroll_session" class="form-select @error('academic_session_id') is-invalid @enderror">
+                            <option value="">Not enrolled</option>
+                            @foreach(($sessions ?? []) as $s)
+                                <option value="{{ $s->id }}" {{ old('academic_session_id', optional($currentSession)->id) == $s->id ? 'selected' : '' }}>{{ $s->name }}{{ $s->is_current ? ' (current)' : '' }}</option>
+                            @endforeach
+                        </select>
+                        @error('academic_session_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Class</label>
+                        <select name="school_class_id" id="enroll_class" class="form-select @error('school_class_id') is-invalid @enderror">
+                            <option value="">Select class</option>
+                            @foreach(($classes ?? []) as $c)
+                                <option value="{{ $c->id }}" {{ old('school_class_id') == $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('school_class_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Section</label>
+                        <select name="section_id" id="enroll_section" class="form-select @error('section_id') is-invalid @enderror" data-selected="{{ old('section_id') }}">
+                            <option value="">Select class first</option>
+                        </select>
+                        @error('section_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Roll number</label>
+                        <input type="text" name="roll_number" class="form-control @error('roll_number') is-invalid @enderror" value="{{ old('roll_number') }}">
+                        @error('roll_number') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="col-12"><div class="form-text mt-0">Pick a session and class to enrol the student now. You can also do this later from their profile.</div></div>
+                </div>
+                <script type="application/json" id="enroll-sections-data">
+                    {!! json_encode(($classes ?? collect())->mapWithKeys(fn ($c) => [$c->id => $c->sections->map(fn ($s) => ['id' => $s->id, 'name' => $s->name])->values()]), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}
+                </script>
+
                 <h5 class="mb-3 mt-2 text-primary border-bottom pb-2">Login account</h5>
                 <div class="form-check mb-2">
                     <input class="form-check-input" type="checkbox" name="create_login" value="1" id="create_login" @checked(old('create_login'))>
@@ -119,6 +160,27 @@
                     var cb = document.getElementById('create_login'), box = document.getElementById('login-fields');
                     function sync() { box.style.display = cb.checked ? '' : 'none'; }
                     cb.addEventListener('change', sync); sync();
+
+                    // Enrollment: fill Section from the chosen Class
+                    var classSel = document.getElementById('enroll_class');
+                    var sectionSel = document.getElementById('enroll_section');
+                    var data = JSON.parse(document.getElementById('enroll-sections-data').textContent || '{}');
+                    function fillSections(selected) {
+                        var list = data[classSel.value] || [];
+                        sectionSel.innerHTML = '';
+                        var first = document.createElement('option');
+                        first.value = '';
+                        first.textContent = !classSel.value ? 'Select class first' : (list.length ? 'All / none' : 'No sections');
+                        sectionSel.appendChild(first);
+                        list.forEach(function (s) {
+                            var o = document.createElement('option');
+                            o.value = s.id; o.textContent = s.name;
+                            if (String(s.id) === String(selected)) o.selected = true;
+                            sectionSel.appendChild(o);
+                        });
+                    }
+                    classSel.addEventListener('change', function () { fillSections(''); });
+                    fillSections(sectionSel.getAttribute('data-selected'));
                 })();
             </script>
             @endpush
