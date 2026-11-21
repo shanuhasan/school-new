@@ -124,13 +124,16 @@ class ExaminationManagementTest extends TestCase
                 'school_class_id' => $this->class->id,
                 'section_id' => $this->section->id,
                 'subject_id' => $this->subject->id,
-                'exam_date' => '2026-10-02',
+                'starts_at' => '2026-10-02T09:00',
+                'ends_at' => '2026-10-02T12:00',
                 'max_marks' => 100,
                 'passing_marks' => 40
             ]);
 
         $response->assertStatus(302);
+        $response->assertSessionHasNoErrors();
         $this->assertDatabaseHas('exam_subjects', ['max_marks' => 100]);
+        $this->assertSame('2026-10-02', ExamSubject::first()->starts_at->format('Y-m-d'));
         
         $examSubject = ExamSubject::first();
         
@@ -297,6 +300,31 @@ class ExaminationManagementTest extends TestCase
         $lib->schools()->attach($this->school->id);
         $this->actingAs($lib)->post(route('academic.results.process'), $payload)->assertForbidden();
         $this->actingAs($lib)->get(route('academic.results.index'))->assertForbidden();
+    }
+
+    public function test_scheduling_a_subject_stores_start_and_end_datetimes()
+    {
+        $examType = ExamType::create(['school_id' => $this->school->id, 'name' => 'Unit Test']);
+        $exam = Exam::create([
+            'school_id' => $this->school->id, 'academic_session_id' => $this->session->id, 'exam_type_id' => $examType->id,
+            'name' => 'Unit Test', 'start_date' => '2026-10-01', 'end_date' => '2026-10-05',
+        ]);
+
+        $this->actingAs($this->admin)->post("/academic/exams/{$exam->id}/subjects", [
+            'school_class_id' => $this->class->id, 'section_id' => $this->section->id, 'subject_id' => $this->subject->id,
+            'starts_at' => '2026-10-02T09:30', 'ends_at' => '2026-10-02T11:30', 'max_marks' => 80, 'passing_marks' => 32,
+        ])->assertStatus(302)->assertSessionHasNoErrors();
+
+        $es = ExamSubject::first();
+        $this->assertSame('2026-10-02 09:30:00', $es->starts_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-10-02 11:30:00', $es->ends_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-10-02', $es->exam_date->format('Y-m-d'));
+
+        // End must be after start
+        $this->actingAs($this->admin)->post("/academic/exams/{$exam->id}/subjects", [
+            'school_class_id' => $this->class->id, 'subject_id' => $this->subject->id,
+            'starts_at' => '2026-10-03T11:00', 'ends_at' => '2026-10-03T10:00', 'max_marks' => 80, 'passing_marks' => 32,
+        ])->assertSessionHasErrors('ends_at');
     }
 
     public function test_processing_all_sections_records_each_students_section_without_error()

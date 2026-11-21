@@ -11,11 +11,13 @@ class ExamSubject extends Model
 
     protected $fillable = [
         'exam_id', 'school_class_id', 'section_id', 'subject_id',
-        'exam_date', 'max_marks', 'passing_marks'
+        'exam_date', 'starts_at', 'ends_at', 'max_marks', 'passing_marks'
     ];
 
     protected $casts = [
         'exam_date' => 'date',
+        'starts_at' => 'datetime',
+        'ends_at' => 'datetime',
         'max_marks' => 'decimal:2',
         'passing_marks' => 'decimal:2',
     ];

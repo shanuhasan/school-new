@@ -72,11 +72,15 @@ class ExamController extends Controller
         
         $validated = $request->validate([
             'school_class_id' => 'required|exists:school_classes,id',
-            'section_id' => 'nullable|exists:sections,id',
+            'section_id' => ['nullable', \Illuminate\Validation\Rule::exists('sections', 'id')->where('school_class_id', (int) $request->input('school_class_id'))],
             'subject_id' => 'required|exists:subjects,id',
-            'exam_date' => 'required|date',
+            'starts_at' => 'required|date',
+            'ends_at' => 'required|date|after:starts_at',
             'max_marks' => 'required|numeric|min:1',
             'passing_marks' => 'required|numeric|min:0|lte:max_marks',
+        ], [
+            'ends_at.after' => 'The end time must be after the start time.',
+            'section_id.exists' => 'The selected section does not belong to the chosen class.',
         ]);
 
         // Check for duplicates
@@ -89,6 +93,9 @@ class ExamController extends Controller
         if ($exists) {
             return back()->with('error', 'Subject already assigned for this class/section.');
         }
+
+        // Keep the legacy date column in step with the start time
+        $validated['exam_date'] = \Illuminate\Support\Carbon::parse($validated['starts_at'])->toDateString();
 
         $exam->subjects()->create($validated);
         return back()->with('success', 'Subject assigned successfully.');
