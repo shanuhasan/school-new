@@ -28,10 +28,11 @@ class StudentImportService
 
     /** Column key => [label in template, required?, help text] */
     public const COLUMNS = [
-        'admission_number' => ['admission_number', true, 'Unique per school, e.g. ADM-2045'],
-        'first_name' => ['first_name', true, ''],
-        'last_name' => ['last_name', true, ''],
-        'date_of_birth' => ['date_of_birth', true, 'YYYY-MM-DD or DD-MM-YYYY'],
+        'admission_number' => ['admission_number', false, 'Unique per school. Left blank → generated automatically'],
+        'first_name' => ['first_name', false, 'Or use a single "name" column instead'],
+        'last_name' => ['last_name', false, ''],
+        'name' => ['name', false, 'Full name, if you don\'t split into first/last'],
+        'date_of_birth' => ['date_of_birth', false, 'YYYY-MM-DD or DD-MM-YYYY (optional)'],
         'gender' => ['gender', true, 'male, female or other'],
         'admission_date' => ['admission_date', false, 'Defaults to today'],
         'status' => ['status', false, 'active or inactive (defaults to active)'],
@@ -51,9 +52,12 @@ class StudentImportService
 
     private const ALIASES = [
         'admission_no' => 'admission_number', 'adm_no' => 'admission_number', 'admission' => 'admission_number',
-        'dob' => 'date_of_birth', 'birth_date' => 'date_of_birth',
-        'sex' => 'gender', 'mobile' => 'phone', 'class_name' => 'class', 'section_name' => 'section',
-        'roll_no' => 'roll_number', 'father_name' => 'guardian_first_name', 'parent_phone' => 'guardian_phone',
+        'student_name' => 'name', 'full_name' => 'name', 'student' => 'name',
+        'dob' => 'date_of_birth', 'birth_date' => 'date_of_birth', 'date_of_birth_dd_mm_yyyy' => 'date_of_birth',
+        'sex' => 'gender', 'mobile' => 'phone', 'contact' => 'phone',
+        'class_name' => 'class', 'grade' => 'class', 'section_name' => 'section',
+        'roll_no' => 'roll_number', 'roll' => 'roll_number',
+        'guardian_name' => 'guardian_first_name', 'parent_phone' => 'guardian_phone',
         'relationship' => 'guardian_relationship',
     ];
 
@@ -66,9 +70,12 @@ class StudentImportService
 
     public function templateCsv(): string
     {
+        // The template uses first_name/last_name; "name" is only accepted on import as an alternative.
+        $labels = collect(self::COLUMNS)->except('name')->map(fn ($c) => $c[0])->values()->all();
+
         $out = fopen('php://temp', 'r+');
         fwrite($out, "\xEF\xBB\xBF"); // UTF-8 BOM so Excel shows non-English names correctly
-        fputcsv($out, array_column(self::COLUMNS, 0));
+        fputcsv($out, $labels);
         rewind($out);
         $csv = stream_get_contents($out);
         fclose($out);
@@ -91,25 +98,46 @@ class StudentImportService
             throw new RuntimeException('The file is empty.');
         }
 
-        $header = array_map(fn ($h) => $this->normaliseHeader((string) $h), array_shift($raw));
+        // The header may not be the first line (some exports add a title + blank rows). Find the
+        // first line that looks like a header: it maps to at least two known columns.
+        $headerIndex = null;
+        $header = [];
+        foreach (array_slice($raw, 0, 15, true) as $i => $cells) {
+            $mapped = array_map(fn ($h) => $this->normaliseHeader((string) $h), $cells);
+            $known = array_filter($mapped, fn ($k) => $k !== '' && array_key_exists($k, self::COLUMNS));
+            if (count($known) >= 2) {
+                $headerIndex = $i;
+                $header = $mapped;
+                break;
+            }
+        }
 
-        $missing = collect(self::COLUMNS)->filter(fn ($c) => $c[1])->keys()->diff($header);
-        if ($missing->isNotEmpty()) {
-            throw new RuntimeException('Missing required column(s): ' . $missing->implode(', ') . '. Please use the downloaded template.');
+        if ($headerIndex === null) {
+            throw new RuntimeException('Could not find the column headings. Make sure the file has a header row (download the template to see the expected columns).');
+        }
+
+        // Must be able to build a name and have gender
+        $hasName = in_array('name', $header, true) || (in_array('first_name', $header, true));
+        if (! $hasName || ! in_array('gender', $header, true)) {
+            throw new RuntimeException('The file needs a "name" (or "first_name") column and a "gender" column.');
         }
 
         $rows = [];
-        foreach ($raw as $i => $cells) {
+        foreach (array_slice($raw, $headerIndex + 1, null, true) as $i => $cells) {
             $row = [];
             foreach ($header as $col => $key) {
                 if ($key !== '' && array_key_exists($key, self::COLUMNS)) {
-                    $row[$key] = trim((string) ($cells[$col] ?? ''));
+                    // A later blank header column shouldn't wipe an earlier mapped one
+                    $value = trim((string) ($cells[$col] ?? ''));
+                    if (! isset($row[$key]) || $row[$key] === '') {
+                        $row[$key] = $value;
+                    }
                 }
             }
             if (implode('', $row) === '') {
                 continue; // skip blank lines
             }
-            $rows[$i + 2] = $row; // +2: 1-based and header row
+            $rows[$i + 1] = $row; // 1-based spreadsheet row number
         }
 
         if (count($rows) === 0) {
@@ -137,7 +165,7 @@ class StudentImportService
     /**
      * @return array{valid: array<int, array>, errors: array<int, array<int, string>>}
      */
-    public function validate(array $rows, int $schoolId, ?int $sessionId): array
+    public function validate(array $rows, int $schoolId, ?int $sessionId, bool $createMissing = false): array
     {
         $existingAdmissions = Student::withoutGlobalScope('school')
             ->where('school_id', $schoolId)
@@ -151,6 +179,10 @@ class StudentImportService
             ->get()
             ->keyBy(fn ($c) => mb_strtolower(trim($c->name)));
 
+        // Next number for auto-generated admission numbers (continue past the highest existing one)
+        $admissionSeq = Student::withoutGlobalScope('school')->where('school_id', $schoolId)->count();
+        $reserved = [];
+
         $seenInFile = [];
         $valid = [];
         $errors = [];
@@ -158,30 +190,54 @@ class StudentImportService
         foreach ($rows as $line => $row) {
             $rowErrors = [];
 
+            // Name: use first/last, or split a single "name" column
+            $first = trim($row['first_name'] ?? '');
+            $last = trim($row['last_name'] ?? '');
+            if ($first === '' && ($row['name'] ?? '') !== '') {
+                $parts = preg_split('/\s+/', trim($row['name']));
+                $first = (string) array_shift($parts);
+                $last = implode(' ', $parts);
+            }
+
+            // Admission number: given, or auto-generated when blank/"NA"
+            $adm = trim($row['admission_number'] ?? '');
+            $autoAdmission = false;
+            if ($adm === '' || mb_strtolower($adm) === 'na') {
+                do {
+                    $admissionSeq++;
+                    $adm = 'ADM-' . str_pad((string) $admissionSeq, 5, '0', STR_PAD_LEFT);
+                } while (isset($existingAdmissions[mb_strtolower($adm)]) || isset($reserved[mb_strtolower($adm)]));
+                $reserved[mb_strtolower($adm)] = true;
+                $autoAdmission = true;
+            }
+
+            $gender = mb_strtolower($row['gender'] ?? '');
+            $gender = ['m' => 'male', 'f' => 'female', 'boy' => 'male', 'girl' => 'female'][$gender] ?? $gender;
+
             $data = [
-                'admission_number' => $row['admission_number'] ?? '',
-                'first_name' => $row['first_name'] ?? '',
-                'last_name' => $row['last_name'] ?? '',
-                'gender' => mb_strtolower($row['gender'] ?? ''),
+                'admission_number' => $adm,
+                'first_name' => $first,
+                'last_name' => $last ?: null,
+                'gender' => $gender,
                 'status' => mb_strtolower(($row['status'] ?? '') ?: 'active'),
                 'phone' => ($row['phone'] ?? '') ?: null,
                 'email' => ($row['email'] ?? '') ?: null,
                 'address' => ($row['address'] ?? '') ?: null,
-                'blood_group' => ($row['blood_group'] ?? '') ? strtoupper(str_replace(' ', '', $row['blood_group'])) : null,
+                'blood_group' => ($row['blood_group'] ?? '') && strtoupper(str_replace(' ', '', $row['blood_group'])) !== 'NA'
+                    ? strtoupper(str_replace(' ', '', $row['blood_group'])) : null,
             ];
-            $data['gender'] = ['m' => 'male', 'f' => 'female', 'boy' => 'male', 'girl' => 'female'][$data['gender']] ?? $data['gender'];
 
-            // Keep the raw text when parsing fails so the validator reports it as an invalid date
+            // Dates are optional; keep raw text when parsing fails so the validator flags it
             $rawDob = $row['date_of_birth'] ?? '';
             $rawAdm = $row['admission_date'] ?? '';
-            $data['date_of_birth'] = $this->parseDate($rawDob) ?? ($rawDob === '' ? null : 'invalid');
+            $data['date_of_birth'] = $rawDob === '' ? null : ($this->parseDate($rawDob) ?? 'invalid');
             $data['admission_date'] = $rawAdm === '' ? now()->toDateString() : ($this->parseDate($rawAdm) ?? 'invalid');
 
             $v = Validator::make($data, [
                 'admission_number' => 'required|string|max:50',
                 'first_name' => 'required|string|max:255',
-                'last_name' => 'required|string|max:255',
-                'date_of_birth' => 'required|date|before:today',
+                'last_name' => 'nullable|string|max:255',
+                'date_of_birth' => 'nullable|date|before:today',
                 'gender' => 'required|in:male,female,other',
                 'status' => 'in:active,inactive',
                 'phone' => 'nullable|string|max:20',
@@ -189,12 +245,9 @@ class StudentImportService
                 'blood_group' => 'nullable|in:' . implode(',', self::BLOOD_GROUPS),
                 'admission_date' => 'required|date',
             ], [
-                'date_of_birth.required' => 'date_of_birth is required.',
                 'date_of_birth.date' => "date_of_birth \"{$rawDob}\" is not a valid date (use YYYY-MM-DD or DD-MM-YYYY).",
                 'admission_date.date' => "admission_date \"{$rawAdm}\" is not a valid date (use YYYY-MM-DD or DD-MM-YYYY).",
-                'admission_number.required' => 'admission_number is required.',
-                'first_name.required' => 'first_name is required.',
-                'last_name.required' => 'last_name is required.',
+                'first_name.required' => 'A name is required (name, or first_name).',
                 'gender.required' => 'gender is required.',
                 'email.email' => 'email is not a valid email address.',
                 'gender.in' => 'gender must be male, female or other.',
@@ -202,17 +255,17 @@ class StudentImportService
                 'blood_group.in' => 'blood_group must be one of ' . implode(', ', self::BLOOD_GROUPS) . '.',
                 'date_of_birth.before' => 'date_of_birth must be in the past.',
             ]);
-            // One message per field is enough (e.g. an invalid date shouldn't also say "must be in the past")
             foreach ($v->errors()->messages() as $messages) {
                 $rowErrors[] = $messages[0];
             }
 
-            $key = mb_strtolower($data['admission_number']);
-            if ($key !== '') {
+            // Duplicate admission numbers (only user-supplied ones; auto numbers are unique by design)
+            if (! $autoAdmission) {
+                $key = mb_strtolower($adm);
                 if (isset($existingAdmissions[$key])) {
-                    $rowErrors[] = "admission_number {$data['admission_number']} already exists in this school.";
+                    $rowErrors[] = "admission_number {$adm} already exists in this school.";
                 } elseif (isset($seenInFile[$key])) {
-                    $rowErrors[] = "admission_number {$data['admission_number']} is repeated (also on row {$seenInFile[$key]}).";
+                    $rowErrors[] = "admission_number {$adm} is repeated (also on row {$seenInFile[$key]}).";
                 } else {
                     $seenInFile[$key] = $line;
                 }
@@ -220,29 +273,33 @@ class StudentImportService
 
             // Optional enrollment
             $enrollment = null;
-            $className = $row['class'] ?? '';
-            $sectionName = $row['section'] ?? '';
-            if ($className !== '') {
+            $className = trim($row['class'] ?? '');
+            $sectionName = trim($row['section'] ?? '');
+            if ($className !== '' && mb_strtolower($className) !== 'na') {
                 $class = $classes->get(mb_strtolower($className));
-                if (! $class) {
-                    $rowErrors[] = "class \"{$className}\" does not exist. Create it under Academic setup → Classes first.";
-                } elseif (! $sessionId) {
+                if (! $sessionId) {
                     $rowErrors[] = 'Choose an academic session to enrol students into a class.';
+                } elseif (! $class && ! $createMissing) {
+                    $rowErrors[] = "class \"{$className}\" does not exist. Create it first, or tick “Create missing classes & sections”.";
                 } else {
-                    $section = null;
-                    if ($sectionName !== '') {
-                        $section = $class->sections->first(fn ($s) => mb_strtolower(trim($s->name)) === mb_strtolower($sectionName));
-                        if (! $section) {
-                            $rowErrors[] = "section \"{$sectionName}\" does not belong to class \"{$class->name}\".";
-                        }
+                    $sectionGiven = $sectionName !== '' && mb_strtolower($sectionName) !== 'na';
+                    $section = $class && $sectionGiven
+                        ? $class->sections->first(fn ($s) => mb_strtolower(trim($s->name)) === mb_strtolower($sectionName))
+                        : null;
+
+                    if ($class && $sectionGiven && ! $section && ! $createMissing) {
+                        $rowErrors[] = "section \"{$sectionName}\" does not belong to class \"{$class->name}\".";
+                    } else {
+                        $enrollment = [
+                            'class_id' => $class?->id,
+                            'class_name' => $class ? null : $className,          // create on import
+                            'section_id' => $section?->id,
+                            'section_name' => ($sectionGiven && ! $section) ? $sectionName : null,
+                            'roll_number' => ($row['roll_number'] ?? '') ?: null,
+                        ];
                     }
-                    $enrollment = [
-                        'school_class_id' => $class->id,
-                        'section_id' => $section?->id,
-                        'roll_number' => ($row['roll_number'] ?? '') ?: null,
-                    ];
                 }
-            } elseif ($sectionName !== '') {
+            } elseif ($sectionName !== '' && mb_strtolower($sectionName) !== 'na') {
                 $rowErrors[] = 'section is filled but class is empty.';
             }
 
@@ -296,11 +353,11 @@ class StudentImportService
     /* ------------------------------------------------------------------ */
 
     /**
-     * @return array{students: int, enrolled: int, guardians_created: int, guardians_linked: int}
+     * @return array{students: int, enrolled: int, guardians_created: int, guardians_linked: int, classes_created: int}
      */
     public function import(array $validRows, int $schoolId, ?int $sessionId): array
     {
-        $summary = ['students' => 0, 'enrolled' => 0, 'guardians_created' => 0, 'guardians_linked' => 0];
+        $summary = ['students' => 0, 'enrolled' => 0, 'guardians_created' => 0, 'guardians_linked' => 0, 'classes_created' => 0];
 
         if ($sessionId) {
             AcademicSession::withoutGlobalScope('school')->where('school_id', $schoolId)->findOrFail($sessionId);
@@ -314,17 +371,56 @@ class StudentImportService
                 ->keyBy(fn ($g) => preg_replace('/\D+/', '', $g->phone) ?: $g->phone)
                 ->all();
 
+            // Caches for classes/sections created on the fly
+            $classCache = SchoolClass::withoutGlobalScope('school')->where('school_id', $schoolId)->with('sections')->get()
+                ->keyBy(fn ($c) => mb_strtolower(trim($c->name)));
+
             foreach ($validRows as $row) {
                 $student = Student::create($row['student'] + ['school_id' => $schoolId]);
                 $summary['students']++;
 
-                if ($row['enrollment'] && $sessionId) {
-                    $student->enrollments()->create($row['enrollment'] + [
-                        'school_id' => $schoolId,
-                        'academic_session_id' => $sessionId,
-                        'status' => 'active',
-                    ]);
-                    $summary['enrolled']++;
+                if ($e = $row['enrollment']) {
+                    if (! $sessionId) {
+                        continue;
+                    }
+
+                    // Resolve (or create) the class
+                    $classId = $e['class_id'];
+                    if (! $classId && ! empty($e['class_name'])) {
+                        $cached = $classCache->get(mb_strtolower(trim($e['class_name'])));
+                        if ($cached) {
+                            $classId = $cached->id;
+                        } else {
+                            $class = SchoolClass::create(['school_id' => $schoolId, 'name' => $e['class_name']]);
+                            $classCache->put(mb_strtolower(trim($e['class_name'])), $class->setRelation('sections', collect()));
+                            $classId = $class->id;
+                            $summary['classes_created']++;
+                        }
+                    }
+
+                    // Resolve (or create) the section
+                    $sectionId = $e['section_id'];
+                    if (! $sectionId && ! empty($e['section_name']) && $classId) {
+                        $class = $classCache->first(fn ($c) => $c->id === $classId);
+                        $section = $class?->sections->first(fn ($s) => mb_strtolower(trim($s->name)) === mb_strtolower(trim($e['section_name'])));
+                        if (! $section) {
+                            $section = \App\Models\Section::create(['school_class_id' => $classId, 'name' => $e['section_name']]);
+                            $class?->sections->push($section);
+                        }
+                        $sectionId = $section->id;
+                    }
+
+                    if ($classId) {
+                        $student->enrollments()->create([
+                            'school_id' => $schoolId,
+                            'academic_session_id' => $sessionId,
+                            'school_class_id' => $classId,
+                            'section_id' => $sectionId,
+                            'roll_number' => $e['roll_number'],
+                            'status' => 'active',
+                        ]);
+                        $summary['enrolled']++;
+                    }
                 }
 
                 if ($g = $row['guardian']) {
@@ -335,7 +431,7 @@ class StudentImportService
                         $guardian = Guardian::create([
                             'school_id' => $schoolId,
                             'first_name' => $g['first_name'] ?: 'Guardian',
-                            'last_name' => $g['last_name'] ?: $row['student']['last_name'],
+                            'last_name' => $g['last_name'] ?: ($row['student']['last_name'] ?? 'Guardian'),
                             'phone' => $g['phone'],
                             'email' => $g['email'],
                         ]);

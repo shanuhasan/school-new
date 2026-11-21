@@ -87,7 +87,7 @@ class StudentImportTest extends TestCase
         $this->assertSame(2, Guardian::first()->students()->count());
 
         $report = session('import_report');
-        $this->assertSame(['students' => 3, 'enrolled' => 2, 'guardians_created' => 1, 'guardians_linked' => 1], $report['imported']);
+        $this->assertSame(['students' => 3, 'enrolled' => 2, 'guardians_created' => 1, 'guardians_linked' => 1, 'classes_created' => 0], $report['imported']);
     }
 
     public function test_reuses_guardian_already_in_school()
@@ -140,11 +140,39 @@ class StudentImportTest extends TestCase
 
     public function test_missing_required_columns_is_rejected()
     {
+        // No gender column → rejected (name + gender are the minimum)
         $this->upload($this->csv(['Riya,Sharma'], 'first_name,last_name'))
             ->assertSessionHasErrors('file');
 
-        $this->assertStringContainsString('admission_number', session('errors')->first('file'));
+        $this->assertStringContainsString('gender', session('errors')->first('file'));
         $this->assertSame(0, Student::count());
+    }
+
+    public function test_imports_messy_government_format_with_title_row_name_and_no_admission()
+    {
+        // Mimics a UDISE/SDMS "List of All Students" export: title + blank rows, single Name
+        // column, no admission number or DOB, Roman-numeral class.
+        $csv = "List of All Students (2026-27)\n\nClass,Section,Name,Gender,Father Name\n"
+            . "I,A,ABDUL AHAD,Male,MO. AFZAL\n"
+            . "I,A,INAYA,Female,PARVEJ ALAM\n";
+        $file = \Illuminate\Http\Testing\File::createWithContent('students.csv', $csv);
+
+        $session = AcademicSession::create(['school_id' => $this->school->id, 'name' => '2026-27', 'start_date' => '2026-04-01', 'end_date' => '2027-03-31', 'is_current' => true]);
+
+        $this->actingAs($this->user)->post(route('students.import.store'), [
+            'file' => $file, 'academic_session_id' => $session->id, 'create_missing' => 1,
+        ])->assertRedirect(route('students.import.create'));
+
+        $this->assertSame(2, Student::count());
+        // Single-word name kept as first name only; two-word name split
+        $this->assertDatabaseHas('students', ['first_name' => 'ABDUL', 'last_name' => 'AHAD', 'gender' => 'male', 'date_of_birth' => null]);
+        $this->assertDatabaseHas('students', ['first_name' => 'INAYA', 'last_name' => null]);
+        // Admission numbers were generated
+        $this->assertStringStartsWith('ADM-', Student::where('first_name', 'INAYA')->value('admission_number'));
+        // Class "I" and section "A" were created and students enrolled
+        $class = \App\Models\SchoolClass::where('school_id', $this->school->id)->where('name', 'I')->first();
+        $this->assertNotNull($class);
+        $this->assertSame(2, \App\Models\Enrollment::where('school_class_id', $class->id)->count());
     }
 
     public function test_classes_of_another_school_are_not_matched()

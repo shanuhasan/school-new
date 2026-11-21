@@ -27,6 +27,7 @@
                 <div>
                     <strong>{{ $s['students'] }} {{ \Illuminate\Support\Str::plural('student', $s['students']) }} imported</strong> from {{ $report['file'] }}.
                     @if($s['enrolled']) {{ $s['enrolled'] }} enrolled in a class. @endif
+                    @if(! empty($s['classes_created'])) {{ $s['classes_created'] }} new {{ \Illuminate\Support\Str::plural('class', $s['classes_created']) }} created. @endif
                     @if($s['guardians_created']) {{ $s['guardians_created'] }} new {{ \Illuminate\Support\Str::plural('guardian', $s['guardians_created']) }} added. @endif
                     @if($s['guardians_linked']) {{ $s['guardians_linked'] }} linked to existing guardians. @endif
                     @if($report['error_count']) <br>{{ $report['error_count'] }} {{ \Illuminate\Support\Str::plural('row', $report['error_count']) }} skipped because of errors (listed below). @endif
@@ -112,6 +113,12 @@
                             </select>
                             @error('academic_session_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             <div class="form-text">Rows with a <code>class</code> value are enrolled in this session.</div>
+                        </div>
+
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="create_missing" value="1" id="create-missing" @checked(old('create_missing'))>
+                            <label class="form-check-label" for="create-missing">Create missing classes &amp; sections</label>
+                            <div class="form-text mt-0">Classes/sections named in the file that don't exist yet are created automatically.</div>
                         </div>
 
                         <div class="form-check mb-4">

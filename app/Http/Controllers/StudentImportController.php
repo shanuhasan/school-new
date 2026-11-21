@@ -53,6 +53,7 @@ class StudentImportController extends Controller
                 Rule::exists('academic_sessions', 'id')->where('school_id', $schoolId),
             ],
             'skip_invalid' => 'nullable|boolean',
+            'create_missing' => 'nullable|boolean',
         ], [
             'file.extensions' => 'Upload a .csv or .xlsx file. For older .xls files, open them in Excel and save as .xlsx.',
             'file.max' => 'The file may not be larger than 5 MB.',
@@ -66,7 +67,7 @@ class StudentImportController extends Controller
             return back()->withErrors(['file' => $e->getMessage()])->withInput();
         }
 
-        $result = $this->importer->validate($rows, $schoolId, $sessionId);
+        $result = $this->importer->validate($rows, $schoolId, $sessionId, $request->boolean('create_missing'));
         $errorCount = count($result['errors']);
         $validCount = count($result['valid']);
 

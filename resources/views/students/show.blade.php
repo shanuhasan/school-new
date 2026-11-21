@@ -53,7 +53,7 @@
                         </li>
                         <li class="list-group-item bg-transparent border-secondary px-0 d-flex justify-content-between">
                             <span class="text-secondary">DOB</span>
-                            <span class="fw-medium text-light">{{ $student->date_of_birth->format('d M Y') }}</span>
+                            <span class="fw-medium text-light">{{ optional($student->date_of_birth)->format('d M Y') ?? '—' }}</span>
                         </li>
                         <li class="list-group-item bg-transparent border-secondary px-0 d-flex justify-content-between">
                             <span class="text-secondary">Blood Group</span>

@@ -46,7 +46,7 @@
                     
                     <div class="col-md-4">
                         <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
-                        <input type="date" name="date_of_birth" class="form-control @error('date_of_birth') is-invalid @enderror" value="{{ old('date_of_birth', $student->date_of_birth->format('Y-m-d')) }}" required>
+                        <input type="date" name="date_of_birth" class="form-control @error('date_of_birth') is-invalid @enderror" value="{{ old('date_of_birth', optional($student->date_of_birth)->format('Y-m-d')) }}">
                         @error('date_of_birth') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-4">
