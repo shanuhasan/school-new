@@ -24,6 +24,8 @@ class ResultController extends Controller
 
     public function index(Request $request)
     {
+        $this->authorize('process', Result::class);
+
         $schoolId = Tenant::getSchoolId();
         
         $exams = Exam::where('school_id', $schoolId)->whereHas('session', function($q) {
@@ -31,14 +33,17 @@ class ResultController extends Controller
         })->get();
 
         $classes = SchoolClass::where('school_id', $schoolId)->get();
-        $results = [];
+        $results = collect();
 
-        if ($request->filled(['exam_id', 'school_class_id', 'section_id'])) {
-            $results = Result::with(['student', 'grade'])
+        // Section is an optional filter; with none, show the whole class.
+        if ($request->filled(['exam_id', 'school_class_id'])) {
+            $results = Result::with(['student', 'grade', 'section'])
                 ->where('exam_id', $request->exam_id)
                 ->where('school_class_id', $request->school_class_id)
-                ->where('section_id', $request->section_id)
-                ->get();
+                ->when($request->filled('section_id'), fn ($q) => $q->where('section_id', $request->section_id))
+                ->get()
+                ->sortByDesc('percentage')
+                ->values();
         }
 
         return view('academic.examinations.results.index', compact('exams', 'classes', 'results'));
@@ -46,11 +51,8 @@ class ResultController extends Controller
 
     public function process(Request $request)
     {
-        Gate::authorize('create', Result::class); // using viewAny or create equivalent, let's just check exams.update
-        
-        if (!auth()->user()->hasPermissionTo('exams.update')) {
-            abort(403, 'Unauthorized action.');
-        }
+        // Super Admin passes via Gate::before; others need results.publish or exams.update.
+        $this->authorize('process', Result::class);
 
         $validated = $request->validate([
             'exam_id' => 'required|exists:exams,id',
@@ -72,25 +74,32 @@ class ResultController extends Controller
             return back()->with('error', 'No subjects scheduled for this exam and class.');
         }
 
-        // Get students in class/section
-        $students = Student::whereHas('enrollments', function($q) use ($sessionId, $validated) {
-                $q->where('academic_session_id', $sessionId)
-                  ->where('school_class_id', $validated['school_class_id']);
-                if (isset($validated['section_id'])) {
-                    $q->where('section_id', $validated['section_id']);
-                }
-            })->get();
+        // Enrollments for this class/session (optionally one section). Each enrollment carries the
+        // student's actual section, which is what we record on the result.
+        $enrollments = \App\Models\Enrollment::where('academic_session_id', $sessionId)
+            ->where('school_class_id', $validated['school_class_id'])
+            ->where('status', 'active')
+            ->when(! empty($validated['section_id']), fn ($q) => $q->where('section_id', $validated['section_id']))
+            ->with('student')
+            ->get()
+            ->filter(fn ($e) => $e->student);
 
         $grades = Grade::where('school_id', $schoolId)->orderBy('min_percentage', 'desc')->get();
 
-        DB::transaction(function () use ($students, $examSubjects, $grades, $validated, $schoolId, $sessionId) {
-            foreach ($students as $student) {
+        $processed = 0;
+
+        DB::transaction(function () use ($enrollments, $examSubjects, $grades, $validated, $schoolId, $sessionId, &$processed) {
+            foreach ($enrollments as $enrollment) {
+                $student = $enrollment->student;
                 $totalMaxMarks = 0;
                 $totalObtainedMarks = 0;
                 $hasFailedSubject = false;
                 $allSubjectsMarked = true;
 
-                foreach ($examSubjects as $subject) {
+                // Only count subjects that apply to this student's section (section-specific or class-wide)
+                $studentSubjects = $examSubjects->filter(fn ($s) => $s->section_id === null || $s->section_id == $enrollment->section_id);
+
+                foreach ($studentSubjects as $subject) {
                     $mark = Mark::where('exam_subject_id', $subject->id)
                         ->where('student_id', $student->id)
                         ->first();
@@ -128,16 +137,17 @@ class ResultController extends Controller
 
                 $status = $hasFailedSubject ? 'fail' : 'pass';
 
+                // Match on the unique key (exam + student); record the student's actual section.
                 Result::updateOrCreate(
                     [
-                        'school_id' => $schoolId,
-                        'academic_session_id' => $sessionId,
                         'exam_id' => $validated['exam_id'],
-                        'school_class_id' => $validated['school_class_id'],
-                        'section_id' => $validated['section_id'],
                         'student_id' => $student->id,
                     ],
                     [
+                        'school_id' => $schoolId,
+                        'academic_session_id' => $sessionId,
+                        'school_class_id' => $validated['school_class_id'],
+                        'section_id' => $enrollment->section_id,
                         'total_max_marks' => $totalMaxMarks,
                         'total_obtained_marks' => $totalObtainedMarks,
                         'percentage' => $percentage,
@@ -145,10 +155,19 @@ class ResultController extends Controller
                         'status' => $status,
                     ]
                 );
+                $processed++;
             }
         });
 
-        return back()->with('success', 'Results processed successfully for all students.');
+        if ($processed === 0) {
+            return back()->with('error', 'No results were processed. Make sure marks are entered for every subject first.');
+        }
+
+        $skipped = $enrollments->count() - $processed;
+
+        return back()->with('success', "Results processed for {$processed} "
+            . \Illuminate\Support\Str::plural('student', $processed)
+            . ($skipped > 0 ? ". {$skipped} skipped (marks not fully entered)." : '.'));
     }
 
     public function publish(Request $request)
@@ -162,19 +181,19 @@ class ResultController extends Controller
         ]);
 
         $query = Result::where('exam_id', $validated['exam_id'])
-            ->where('school_class_id', $validated['school_class_id']);
-            
-        if (isset($validated['section_id'])) {
-            $query->where('section_id', $validated['section_id']);
-        } else {
-            $query->whereNull('section_id');
-        }
-            
-        $query->update([
-                'is_published' => true,
-                'published_at' => now()
-            ]);
+            ->where('school_class_id', $validated['school_class_id'])
+            // Section filter narrows to one section; with no filter, publish the whole class.
+            ->when(! empty($validated['section_id']), fn ($q) => $q->where('section_id', $validated['section_id']));
 
-        return back()->with('success', 'Results published successfully. Marks are now locked.');
+        $count = $query->update([
+            'is_published' => true,
+            'published_at' => now(),
+        ]);
+
+        if ($count === 0) {
+            return back()->with('error', 'Nothing to publish. Process the results first.');
+        }
+
+        return back()->with('success', "Results published for {$count} " . \Illuminate\Support\Str::plural('student', $count) . '. Marks are now locked.');
     }
 }

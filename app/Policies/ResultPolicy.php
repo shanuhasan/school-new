@@ -28,4 +28,13 @@ class ResultPolicy
     {
         return $user->hasPermissionTo('results.publish');
     }
+
+    /**
+     * Process (calculate) results. Staff who can publish results or edit exams may do this.
+     * Super Admin is allowed via the Gate::before bypass in AppServiceProvider.
+     */
+    public function process(User $user): bool
+    {
+        return $user->hasPermissionTo('results.publish') || $user->hasPermissionTo('exams.update');
+    }
 }

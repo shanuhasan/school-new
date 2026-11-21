@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Academic;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicSession;
+use App\Models\Enrollment;
 use App\Models\Exam;
 use App\Models\ExamSubject;
 use App\Models\Mark;
 use App\Models\SchoolClass;
-use App\Models\Student;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use App\Facades\Tenant;
@@ -30,48 +30,66 @@ class MarksController extends Controller
         })->get();
 
         $classes = SchoolClass::where('school_id', $schoolId)->get();
+        // Sections of the class filter, rendered server-side so the Section dropdown keeps its value on reload
+        $sections = $request->filled('school_class_id')
+            ? \App\Models\Section::where('school_class_id', $request->school_class_id)->orderBy('name')->get()
+            : collect();
         $examSubjects = collect();
-        $students = collect();
+        $roster = collect();
         $existingMarks = collect();
         $selectedSubject = null;
+        $showSection = false;
 
-        // Subjects scheduled for this exam + class. Picking a section narrows to that section
-        // plus any class-wide subjects; with no section we show every subject for the class.
-        if ($request->filled(['exam_id', 'school_class_id'])) {
-            $examSubjects = ExamSubject::with(['subject', 'section'])
-                ->where('exam_id', $request->exam_id)
-                ->where('school_class_id', $request->school_class_id)
+        // Subjects are listed per EXAM. Class and Section are optional filters:
+        //  - Section chosen → subjects for that section plus any class-wide subject.
+        //  - Section "All"  → every subject in the exam (optionally narrowed to the class).
+        $exam = $request->filled('exam_id')
+            ? Exam::where('school_id', $schoolId)->find($request->exam_id)
+            : null;
+
+        if ($exam) {
+            $examSubjects = $exam->subjects()
+                ->with(['subject', 'section', 'schoolClass'])
+                ->when($request->filled('school_class_id'), fn ($q) => $q->where('school_class_id', $request->school_class_id))
                 ->when($request->filled('section_id'), function ($q) use ($request) {
                     $q->where(fn ($w) => $w->where('section_id', $request->section_id)->orWhereNull('section_id'));
                 })
                 ->get()
-                ->sortBy(fn ($es) => [$es->section?->name ?? '', $es->subject?->name ?? ''])
+                ->sortBy(fn ($es) => [$es->schoolClass?->name ?? '', $es->section?->name ?? '', $es->subject?->name ?? ''])
                 ->values();
         }
 
-        if ($request->filled('exam_subject_id')) {
-            // The exam subject carries its own class + section, which is authoritative for the roster.
+        if ($request->filled('exam_subject_id') && $exam) {
             $selectedSubject = ExamSubject::with(['subject', 'section', 'schoolClass'])
                 ->where('exam_id', $request->exam_id)
                 ->findOrFail($request->exam_subject_id);
 
-            $sessionId = \App\Models\AcademicSession::where('is_current', true)->where('school_id', $schoolId)->value('id');
+            $sessionId = AcademicSession::where('is_current', true)->where('school_id', $schoolId)->value('id');
 
-            $students = Student::whereHas('enrollments', function ($q) use ($sessionId, $selectedSubject) {
-                    $q->where('academic_session_id', $sessionId)
-                      ->where('school_class_id', $selectedSubject->school_class_id)
-                      ->where('status', 'active');
-                    if ($selectedSubject->section_id) {
-                        $q->where('section_id', $selectedSubject->section_id);
-                    }
-                })
-                ->orderBy('first_name')->orderBy('last_name')
-                ->get();
+            // The roster's section is the subject's own section; a class-wide subject can be
+            // narrowed by the Section filter. With no effective section, show every section.
+            $rosterSection = $selectedSubject->section_id
+                ?: ($request->filled('section_id') ? (int) $request->section_id : null);
+            $showSection = ! $rosterSection;
+
+            $roster = Enrollment::where('academic_session_id', $sessionId)
+                ->where('school_class_id', $selectedSubject->school_class_id)
+                ->where('status', 'active')
+                ->when($rosterSection, fn ($q) => $q->where('section_id', $rosterSection))
+                ->with(['student', 'section'])
+                ->get()
+                ->filter(fn ($e) => $e->student)
+                ->sortBy([
+                    fn ($a, $b) => strnatcasecmp($a->section->name ?? '~', $b->section->name ?? '~'),
+                    fn ($a, $b) => strnatcmp((string) $a->roll_number, (string) $b->roll_number),
+                    fn ($a, $b) => strcasecmp($a->student->full_name, $b->student->full_name),
+                ])
+                ->values();
 
             $existingMarks = Mark::where('exam_subject_id', $selectedSubject->id)->get()->keyBy('student_id');
         }
 
-        return view('academic.examinations.marks.index', compact('exams', 'classes', 'examSubjects', 'students', 'existingMarks', 'selectedSubject'));
+        return view('academic.examinations.marks.index', compact('exams', 'classes', 'sections', 'examSubjects', 'roster', 'existingMarks', 'selectedSubject', 'showSection'));
     }
 
     public function store(Request $request)
