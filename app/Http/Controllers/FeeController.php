@@ -7,6 +7,7 @@ use App\Models\AcademicSession;
 use App\Models\Fee;
 use App\Models\Student;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class FeeController extends Controller
 {
@@ -61,6 +62,7 @@ class FeeController extends Controller
             ->withSum('fees as billed_sum', 'amount')
             ->withSum('fees as fine_sum', 'fine')
             ->withSum('fees as discount_sum', 'discount')
+            ->withSum('fees as waived_sum', 'waived_amount')
             ->withSum('fees as paid_sum', 'paid_amount')
             ->orderBy('first_name')->orderBy('last_name')
             ->paginate(20)->withQueryString();
@@ -146,6 +148,76 @@ class FeeController extends Controller
         $fee->save();
 
         return redirect()->route('fees.show', $fee)->with('success', 'Payment recorded.');
+    }
+
+    /** Collect several installments at once (e.g. 3–4 months' advance), full balance of each. */
+    public function bulkCollect(Request $request)
+    {
+        $this->can($request, 'fees.collect');
+
+        $validated = $request->validate([
+            'fee_ids' => 'required|array|min:1',
+            'fee_ids.*' => 'integer',
+            'paid_on' => 'required|date',
+            'method' => 'nullable|string|max:50',
+        ]);
+
+        $fees = Fee::whereIn('id', $validated['fee_ids'])->where('school_id', Tenant::getSchoolId())->get();
+
+        $count = 0;
+        $total = 0.0;
+        DB::transaction(function () use ($fees, $validated, &$count, &$total) {
+            foreach ($fees as $fee) {
+                if ($fee->balance <= 0) {
+                    continue;
+                }
+                $total += $fee->balance;
+                $fee->paid_amount = round((float) $fee->paid_amount + $fee->balance, 2);
+                $fee->paid_on = $validated['paid_on'];
+                $fee->method = $validated['method'] ?? $fee->method;
+                $fee->syncStatus();
+                $fee->save();
+                $count++;
+            }
+        });
+
+        return back()->with('success', $count > 0
+            ? "Collected {$count} installment(s), total " . number_format($total, 2) . '.'
+            : 'Nothing to collect in the selected rows.');
+    }
+
+    /** Waive several installments at once, full balance of each, one reason. */
+    public function bulkWaive(Request $request)
+    {
+        $this->can($request, 'fees.refund');
+
+        $validated = $request->validate([
+            'fee_ids' => 'required|array|min:1',
+            'fee_ids.*' => 'integer',
+            'reason' => 'required|string|max:255',
+        ], ['reason.required' => 'Please give a reason for waiving.']);
+
+        $fees = Fee::whereIn('id', $validated['fee_ids'])->where('school_id', Tenant::getSchoolId())->get();
+
+        $count = 0;
+        $total = 0.0;
+        DB::transaction(function () use ($fees, $validated, &$count, &$total) {
+            foreach ($fees as $fee) {
+                if ($fee->balance <= 0) {
+                    continue;
+                }
+                $total += $fee->balance;
+                $fee->waived_amount = round((float) $fee->waived_amount + $fee->balance, 2);
+                $fee->waive_reason = trim(($fee->waive_reason ? $fee->waive_reason . '; ' : '') . $validated['reason']);
+                $fee->syncStatus();
+                $fee->save();
+                $count++;
+            }
+        });
+
+        return back()->with('success', $count > 0
+            ? "Waived {$count} installment(s), total " . number_format($total, 2) . '.'
+            : 'Nothing to waive in the selected rows.');
     }
 
     /** Waive (maaf) part or all of the outstanding balance, with a reason. */

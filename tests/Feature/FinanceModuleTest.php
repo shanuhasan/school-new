@@ -74,6 +74,56 @@ class FinanceModuleTest extends TestCase
             ->assertOk()->assertSee('FEE RECEIPT')->assertSee('Green Valley School')->assertSee('Riya Rao');
     }
 
+    public function test_bulk_collect_and_bulk_waive_multiple_months()
+    {
+        $student = $this->student();
+        // 4 monthly installments
+        $fees = collect(['Apr', 'May', 'Jun', 'Jul'])->map(fn ($m, $i) => Fee::create([
+            'school_id' => $this->school->id, 'student_id' => $student->id, 'title' => 'Tuition', 'period' => $m,
+            'amount' => 1000, 'status' => 'unpaid', 'due_date' => '2026-0' . ($i + 4) . '-10',
+        ]));
+
+        // Advance payment: collect first 3 months at once
+        $this->actingAs($this->accountant)->post(route('fees.bulk-collect'), [
+            'fee_ids' => [$fees[0]->id, $fees[1]->id, $fees[2]->id], 'paid_on' => '2026-04-05', 'method' => 'Cash',
+        ])->assertRedirect()->assertSessionHas('success');
+
+        foreach ([0, 1, 2] as $i) {
+            $this->assertSame('paid', $fees[$i]->fresh()->status);
+            $this->assertEquals(0.00, $fees[$i]->fresh()->balance);
+        }
+        // 4th still unpaid
+        $this->assertSame('unpaid', $fees[3]->fresh()->status);
+
+        // Waive the remaining month in bulk
+        $this->actingAs($this->accountant)->post(route('fees.bulk-waive'), [
+            'fee_ids' => [$fees[3]->id], 'reason' => 'Final month concession',
+        ])->assertRedirect()->assertSessionHas('success');
+        $this->assertSame('waived', $fees[3]->fresh()->status);
+
+        // Student now owes nothing
+        $this->assertEquals(0.00, $student->fees()->get()->sum(fn ($f) => $f->balance));
+    }
+
+    public function test_bulk_actions_respect_permissions_and_require_selection()
+    {
+        $student = $this->student();
+        $fee = Fee::create(['school_id' => $this->school->id, 'student_id' => $student->id, 'title' => 'T', 'amount' => 100, 'status' => 'unpaid']);
+
+        // No rows selected → validation error
+        $this->actingAs($this->accountant)->post(route('fees.bulk-collect'), ['paid_on' => '2026-04-05'])->assertSessionHasErrors('fee_ids');
+        // Waive needs a reason
+        $this->actingAs($this->accountant)->post(route('fees.bulk-waive'), ['fee_ids' => [$fee->id]])->assertSessionHasErrors('reason');
+
+        // A teacher (no fee permissions) is blocked
+        $teacher = User::factory()->create(['current_school_id' => $this->school->id]);
+        $teacher->assignRole('Teacher');
+        $teacher->schools()->attach($this->school->id);
+        $this->actingAs($teacher)->post(route('fees.bulk-collect'), ['fee_ids' => [$fee->id], 'paid_on' => '2026-04-05'])->assertForbidden();
+
+        $this->assertEquals(0.00, $fee->fresh()->paid_amount);
+    }
+
     public function test_fee_can_be_waived_fully_and_partially()
     {
         $student = $this->student();
@@ -101,6 +151,24 @@ class FinanceModuleTest extends TestCase
 
         // The waived amount shows on the printable slip
         $this->actingAs($this->accountant)->get(route('fees.slip', $fee))->assertOk()->assertSee('Waived')->assertSee('Scholarship');
+    }
+
+    public function test_student_fees_list_reflects_waived_amount_in_balance()
+    {
+        $student = $this->student();
+        $fee = Fee::create(['school_id' => $this->school->id, 'student_id' => $student->id, 'title' => 'Tuition', 'amount' => 1000, 'status' => 'unpaid']);
+
+        // Before waiving: balance shows full 1,000
+        $this->actingAs($this->accountant)->get(route('fees.students'))->assertOk()->assertSee('1,000.00');
+
+        // Waive 400 → balance should become 600 and a "Waived" marker appears
+        $this->actingAs($this->accountant)->post(route('fees.waive', $fee), ['amount' => 400, 'reason' => 'Concession']);
+
+        $this->actingAs($this->accountant)->get(route('fees.students'))
+            ->assertOk()
+            ->assertSee('Waived')     // badge + column
+            ->assertSee('600.00')     // remaining balance
+            ->assertSee('400.00');    // waived amount
     }
 
     public function test_waiving_requires_refund_permission()
