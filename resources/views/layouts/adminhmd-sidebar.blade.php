@@ -116,9 +116,13 @@
     @canany(['fees.view', 'salary.view'])
     <div class="nav-group-label">Finance</div>
     @can('fees.view')
-    <a class="nav-link {{ request()->routeIs('fees.index', 'fees.create', 'fees.show') ? 'active' : '' }}" href="{{ route('fees.index') }}" title="Fees">
+    <a class="nav-link {{ request()->routeIs('fees.students', 'fees.student', 'fees.index', 'fees.create', 'fees.show') ? 'active' : '' }}" href="{{ route('fees.students') }}" title="Student fees">
       <span class="nav-icon"><i class="bi bi-cash-coin" aria-hidden="true"></i></span>
-      <span class="nav-text">Fees</span>
+      <span class="nav-text">Student fees</span>
+    </a>
+    <a class="nav-link {{ request()->routeIs('fees.structures.*') ? 'active' : '' }}" href="{{ route('fees.structures.index') }}" title="Class-wise fees">
+      <span class="nav-icon"><i class="bi bi-diagram-3" aria-hidden="true"></i></span>
+      <span class="nav-text">Class fees</span>
     </a>
     <a class="nav-link {{ request()->routeIs('fees.report') ? 'active' : '' }}" href="{{ route('fees.report') }}" title="Fee reports">
       <span class="nav-icon"><i class="bi bi-graph-up" aria-hidden="true"></i></span>

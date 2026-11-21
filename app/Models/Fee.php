@@ -11,7 +11,8 @@ class Fee extends Model
     use HasFactory, BelongsToSchool;
 
     protected $fillable = [
-        'school_id', 'student_id', 'academic_session_id', 'title',
+        'school_id', 'student_id', 'academic_session_id', 'fee_structure_id', 'school_class_id',
+        'title', 'period', 'period_no',
         'amount', 'discount', 'fine', 'paid_amount',
         'due_date', 'paid_on', 'method', 'status', 'remarks', 'created_by',
     ];
@@ -54,5 +55,15 @@ class Fee extends Model
     public function session()
     {
         return $this->belongsTo(AcademicSession::class, 'academic_session_id');
+    }
+
+    public function structure()
+    {
+        return $this->belongsTo(FeeStructure::class, 'fee_structure_id');
+    }
+
+    public function schoolClass()
+    {
+        return $this->belongsTo(SchoolClass::class, 'school_class_id');
     }
 }

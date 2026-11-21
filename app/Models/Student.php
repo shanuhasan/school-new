@@ -79,6 +79,11 @@ class Student extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function fees(): HasMany
+    {
+        return $this->hasMany(Fee::class);
+    }
+
     /**
      * List filters shared by the students page and the Excel export.
      * Keys: search, class_id, section_id, session_id, status.

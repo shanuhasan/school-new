@@ -77,6 +77,18 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext:
 // Finance: Fees & Salary
 Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext::class])->group(function () {
     Route::get('fees/report', [\App\Http\Controllers\FeeReportController::class, 'index'])->name('fees.report');
+
+    // Class-wise fee setup
+    Route::get('fees/structures', [\App\Http\Controllers\FeeStructureController::class, 'index'])->name('fees.structures.index');
+    Route::get('fees/structures/create', [\App\Http\Controllers\FeeStructureController::class, 'create'])->name('fees.structures.create');
+    Route::post('fees/structures', [\App\Http\Controllers\FeeStructureController::class, 'store'])->name('fees.structures.store');
+    Route::post('fees/structures/{structure}/generate', [\App\Http\Controllers\FeeStructureController::class, 'generate'])->name('fees.structures.generate');
+    Route::delete('fees/structures/{structure}', [\App\Http\Controllers\FeeStructureController::class, 'destroy'])->name('fees.structures.destroy');
+
+    // Per-student fee tracking
+    Route::get('fees/students', [\App\Http\Controllers\FeeController::class, 'students'])->name('fees.students');
+    Route::get('fees/students/{student}', [\App\Http\Controllers\FeeController::class, 'student'])->name('fees.student');
+
     Route::get('fees/{fee}/slip', [\App\Http\Controllers\FeeController::class, 'slip'])->name('fees.slip');
     Route::post('fees/{fee}/collect', [\App\Http\Controllers\FeeController::class, 'collect'])->name('fees.collect');
     Route::resource('fees', \App\Http\Controllers\FeeController::class)->except(['edit', 'update']);

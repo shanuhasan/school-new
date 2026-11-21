@@ -16,7 +16,7 @@
                         <select name="student_id" class="form-select @error('student_id') is-invalid @enderror" required>
                             <option value="">Select student</option>
                             @foreach($students as $s)
-                                <option value="{{ $s->id }}" @selected(old('student_id') == $s->id)>{{ $s->full_name }} — {{ $s->admission_number }}</option>
+                                <option value="{{ $s->id }}" @selected(old('student_id', request('student_id')) == $s->id)>{{ $s->full_name }} — {{ $s->admission_number }}</option>
                             @endforeach
                         </select>
                         @error('student_id') <div class="invalid-feedback">{{ $message }}</div> @enderror

@@ -44,6 +44,48 @@ class FeeController extends Controller
         return view('fees.index', compact('fees', 'summary'));
     }
 
+    /** Students with a fee summary, to track who has paid what (search + class filter). */
+    public function students(Request $request)
+    {
+        $this->can($request, 'fees.view');
+
+        $sessions = \App\Models\AcademicSession::orderByDesc('is_current')->orderByDesc('start_date')->get();
+        $classes = \App\Models\SchoolClass::orderBy('name')->get();
+
+        $query = Student::query()
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $s = $request->string('search');
+                $q->where(fn ($w) => $w->where('first_name', 'like', "%{$s}%")->orWhere('last_name', 'like', "%{$s}%")->orWhere('admission_number', 'like', "%{$s}%"));
+            })
+            ->when($request->filled('class_id'), fn ($q) => $q->whereHas('enrollments', fn ($e) => $e->where('school_class_id', $request->class_id)->where('status', 'active')))
+            ->withSum('fees as billed_sum', 'amount')
+            ->withSum('fees as fine_sum', 'fine')
+            ->withSum('fees as discount_sum', 'discount')
+            ->withSum('fees as paid_sum', 'paid_amount')
+            ->orderBy('first_name')->orderBy('last_name')
+            ->paginate(20)->withQueryString();
+
+        return view('fees.students', compact('query', 'classes', 'sessions'));
+    }
+
+    /** One student's fee ledger — every period, paid or not, grouped by fee head. */
+    public function student(Request $request, Student $student)
+    {
+        $this->can($request, 'fees.view');
+        abort_if($student->school_id !== Tenant::getSchoolId(), 404);
+
+        $fees = $student->fees()->with('schoolClass')->orderBy('due_date')->orderBy('period_no')->get();
+        $groups = $fees->groupBy(fn ($f) => $f->title . ($f->fee_structure_id ? ' #' . $f->fee_structure_id : ''));
+
+        $totals = [
+            'billed' => $fees->sum(fn ($f) => $f->payable),
+            'paid' => $fees->sum(fn ($f) => (float) $f->paid_amount),
+        ];
+        $totals['balance'] = round($totals['billed'] - $totals['paid'], 2);
+
+        return view('fees.student', compact('student', 'groups', 'totals'));
+    }
+
     public function create(Request $request)
     {
         $this->can($request, 'fees.create');

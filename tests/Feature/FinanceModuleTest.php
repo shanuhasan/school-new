@@ -117,6 +117,73 @@ class FinanceModuleTest extends TestCase
         $res->assertSee('2025');
     }
 
+    public function test_class_wise_fee_structure_generates_monthly_installments()
+    {
+        $session = \App\Models\AcademicSession::create([
+            'school_id' => $this->school->id, 'name' => '2026-27',
+            'start_date' => '2026-04-01', 'end_date' => '2027-03-31', 'is_current' => true,
+        ]);
+        $class = \App\Models\SchoolClass::create(['school_id' => $this->school->id, 'name' => 'Class I']);
+        $section = \App\Models\Section::create(['school_class_id' => $class->id, 'name' => 'A']);
+
+        // Two students enrolled in the class
+        foreach (['ADM-1', 'ADM-2'] as $adm) {
+            $student = $this->student($adm);
+            $student->enrollments()->create([
+                'school_id' => $this->school->id, 'academic_session_id' => $session->id,
+                'school_class_id' => $class->id, 'section_id' => $section->id, 'status' => 'active',
+            ]);
+        }
+
+        // Define a monthly tuition fee for the class
+        $this->actingAs($this->accountant)->post(route('fees.structures.store'), [
+            'academic_session_id' => $session->id, 'school_class_id' => $class->id,
+            'title' => 'Tuition Fee', 'amount' => 1000, 'frequency' => 'monthly',
+        ])->assertRedirect();
+
+        $structure = \App\Models\FeeStructure::firstOrFail();
+        $this->assertSame(12, $structure->periodCount());
+
+        // Generate installments
+        $this->actingAs($this->accountant)->post(route('fees.structures.generate', $structure))->assertRedirect();
+
+        // 2 students × 12 months = 24 fee rows, each 1000, tagged with period + class
+        $this->assertSame(24, Fee::where('fee_structure_id', $structure->id)->count());
+        $apr = Fee::where('fee_structure_id', $structure->id)->where('period', 'April 2026')->first();
+        $this->assertNotNull($apr);
+        $this->assertEquals(1000.00, $apr->amount);
+        $this->assertSame($class->id, $apr->school_class_id);
+
+        // Re-generating does not duplicate
+        $this->actingAs($this->accountant)->post(route('fees.structures.generate', $structure));
+        $this->assertSame(24, Fee::where('fee_structure_id', $structure->id)->count());
+
+        // Ledger shows the student's 12 periods, paid/unpaid tracked
+        $student = Student::where('admission_number', 'ADM-1')->first();
+        $this->actingAs($this->accountant)->get(route('fees.student', $student))
+            ->assertOk()->assertSee('April 2026')->assertSee('March 2027')->assertSee('Tuition Fee');
+
+        // Pay one month → that period becomes paid
+        $aprOfStudent = $student->fees()->where('period', 'April 2026')->first();
+        $this->actingAs($this->accountant)->post(route('fees.collect', $aprOfStudent), ['amount' => 1000, 'paid_on' => '2026-04-05']);
+        $this->assertSame('paid', $aprOfStudent->fresh()->status);
+
+        // Student fees list shows a balance of 11,000 remaining (12k billed - 1k paid)
+        $this->actingAs($this->accountant)->get(route('fees.students'))->assertOk()->assertSee('11,000.00');
+    }
+
+    public function test_quarterly_and_yearly_period_counts()
+    {
+        $session = \App\Models\AcademicSession::create(['school_id' => $this->school->id, 'name' => '2026-27', 'start_date' => '2026-04-01', 'end_date' => '2027-03-31']);
+        $class = \App\Models\SchoolClass::create(['school_id' => $this->school->id, 'name' => 'Class II']);
+
+        $q = \App\Models\FeeStructure::create(['school_id' => $this->school->id, 'academic_session_id' => $session->id, 'school_class_id' => $class->id, 'title' => 'T', 'amount' => 3000, 'frequency' => 'quarterly']);
+        $y = \App\Models\FeeStructure::create(['school_id' => $this->school->id, 'academic_session_id' => $session->id, 'school_class_id' => $class->id, 'title' => 'Y', 'amount' => 12000, 'frequency' => 'yearly']);
+
+        $this->assertSame(4, $q->periodCount());
+        $this->assertSame(1, $y->periodCount());
+    }
+
     public function test_student_cannot_view_fee_report()
     {
         $student = User::factory()->create(['current_school_id' => $this->school->id]);
@@ -163,7 +230,7 @@ class FinanceModuleTest extends TestCase
         $super->assignRole('Super Admin');
         $super->schools()->attach($this->school->id);
 
-        $this->actingAs($super)->get(route('dashboard'))->assertOk()->assertSee('Fees')->assertSee('Salaries');
+        $this->actingAs($super)->get(route('dashboard'))->assertOk()->assertSee('Student fees')->assertSee('Class fees')->assertSee('Salaries');
         $this->actingAs($super)->get(route('fees.index'))->assertOk();
         $this->actingAs($super)->get(route('salaries.index'))->assertOk();
     }
