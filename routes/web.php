@@ -74,6 +74,17 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext:
     Route::post('results/publish', [\App\Http\Controllers\Academic\ResultController::class, 'publish'])->name('results.publish');
 });
 
+// Finance: Fees & Salary
+Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext::class])->group(function () {
+    Route::get('fees/{fee}/slip', [\App\Http\Controllers\FeeController::class, 'slip'])->name('fees.slip');
+    Route::post('fees/{fee}/collect', [\App\Http\Controllers\FeeController::class, 'collect'])->name('fees.collect');
+    Route::resource('fees', \App\Http\Controllers\FeeController::class)->except(['edit', 'update']);
+
+    Route::get('salaries/{salary}/slip', [\App\Http\Controllers\SalaryController::class, 'slip'])->name('salaries.slip');
+    Route::post('salaries/{salary}/pay', [\App\Http\Controllers\SalaryController::class, 'pay'])->name('salaries.pay');
+    Route::resource('salaries', \App\Http\Controllers\SalaryController::class)->except(['edit', 'update']);
+});
+
 Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext::class])->prefix('reports')->name('reports.')->group(function () {
     Route::get('attendance/daily', [\App\Http\Controllers\Report\AttendanceReportController::class, 'daily'])->name('attendance.daily');
     Route::get('attendance/monthly', [\App\Http\Controllers\Report\AttendanceReportController::class, 'monthly'])->name('attendance.monthly');

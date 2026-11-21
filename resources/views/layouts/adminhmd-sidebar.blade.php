@@ -113,6 +113,22 @@
     </div>
     @endcanany
 
+    @canany(['fees.view', 'salary.view'])
+    <div class="nav-group-label">Finance</div>
+    @can('fees.view')
+    <a class="nav-link {{ request()->routeIs('fees.*') ? 'active' : '' }}" href="{{ route('fees.index') }}" title="Fees">
+      <span class="nav-icon"><i class="bi bi-cash-coin" aria-hidden="true"></i></span>
+      <span class="nav-text">Fees</span>
+    </a>
+    @endcan
+    @can('salary.view')
+    <a class="nav-link {{ request()->routeIs('salaries.*') ? 'active' : '' }}" href="{{ route('salaries.index') }}" title="Salaries">
+      <span class="nav-icon"><i class="bi bi-wallet2" aria-hidden="true"></i></span>
+      <span class="nav-text">Salaries</span>
+    </a>
+    @endcan
+    @endcanany
+
     @php $isSuperAdmin = Auth::user()->hasRole('Super Admin'); @endphp
     @if($isSuperAdmin || Auth::user()->canAny(['academic.manage', 'attendance.view_reports']))
     <div class="nav-group-label">Administration</div>

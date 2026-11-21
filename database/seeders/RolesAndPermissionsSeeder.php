@@ -24,6 +24,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'timetable.view', 'timetable.manage',
             'homework.view', 'homework.manage', 'homework.submit',
             'fees.view', 'fees.create', 'fees.update', 'fees.collect', 'fees.refund',
+            'salary.view', 'salary.manage',
             'exams.view', 'exams.create', 'exams.update', 'marks.enter', 'results.publish',
             'academic.manage',
             'staff.manage',
@@ -58,7 +59,8 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Accountant
         $accountant->syncPermissions([
-            'fees.view', 'fees.create', 'fees.update', 'fees.collect', 'fees.refund'
+            'fees.view', 'fees.create', 'fees.update', 'fees.collect', 'fees.refund',
+            'salary.view', 'salary.manage',
         ]);
 
         // Principal / School Admin gets all for their school (simplified for now to all)
@@ -67,12 +69,14 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Student / Parent — one sync each with the full intended set (don't call syncPermissions
         // twice for the same role: the second call replaces the first).
+        // Note: fees are a staff tool (fees.view is management access), so students/parents
+        // don't get it — a student-facing "my fees" view would be a separate permission.
         $student->syncPermissions([
-            'attendance.view', 'timetable.view', 'exams.view', 'fees.view',
+            'attendance.view', 'timetable.view', 'exams.view',
             'homework.view', 'homework.submit',
         ]);
         $parent->syncPermissions([
-            'students.view', 'attendance.view', 'timetable.view', 'exams.view', 'fees.view',
+            'students.view', 'attendance.view', 'timetable.view', 'exams.view',
             'homework.view',
         ]);
 
