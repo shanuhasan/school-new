@@ -88,6 +88,32 @@ class FeeController extends Controller
         return view('fees.student', compact('student', 'groups', 'totals'));
     }
 
+    /** Printable A4 fee statement with all of a student's installments on one page. */
+    public function studentPrint(Request $request, Student $student)
+    {
+        $this->can($request, 'fees.view');
+        abort_if($student->school_id !== Tenant::getSchoolId(), 404);
+
+        $student->load(['enrollments' => fn ($q) => $q->where('status', 'active')->with(['schoolClass', 'section'])]);
+
+        $fees = $student->fees()->with('schoolClass')->orderBy('due_date')->orderBy('period_no')->get();
+        $groups = $fees->groupBy(fn ($f) => $f->title . ($f->fee_structure_id ? ' #' . $f->fee_structure_id : ''));
+
+        $totals = [
+            'billed' => $fees->sum(fn ($f) => (float) $f->amount + (float) $f->fine - (float) $f->discount),
+            'waived' => $fees->sum(fn ($f) => (float) $f->waived_amount),
+            'paid' => $fees->sum(fn ($f) => (float) $f->paid_amount),
+        ];
+        $totals['balance'] = round($totals['billed'] - $totals['waived'] - $totals['paid'], 2);
+
+        return view('fees.student-print', [
+            'student' => $student,
+            'groups' => $groups,
+            'totals' => $totals,
+            'school' => Tenant::getSchool(),
+        ]);
+    }
+
     public function create(Request $request)
     {
         $this->can($request, 'fees.create');

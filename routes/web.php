@@ -88,6 +88,7 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureTenantContext:
     // Per-student fee tracking
     Route::get('fees/students', [\App\Http\Controllers\FeeController::class, 'students'])->name('fees.students');
     Route::get('fees/students/{student}', [\App\Http\Controllers\FeeController::class, 'student'])->name('fees.student');
+    Route::get('fees/students/{student}/print', [\App\Http\Controllers\FeeController::class, 'studentPrint'])->name('fees.student.print');
 
     Route::get('fees/{fee}/slip', [\App\Http\Controllers\FeeController::class, 'slip'])->name('fees.slip');
     Route::post('fees/{fee}/collect', [\App\Http\Controllers\FeeController::class, 'collect'])->name('fees.collect');

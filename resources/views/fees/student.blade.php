@@ -10,6 +10,7 @@
             <div><span class="eyebrow">Fee ledger</span><h1 class="h3 mb-1">{{ $student->full_name }}</h1>
                 <p>{{ $student->admission_number }}</p></div>
             <div class="d-flex gap-2">
+                <a href="{{ route('fees.student.print', $student) }}" target="_blank" class="btn btn-primary"><i class="bi bi-printer"></i> Print statement</a>
                 @can('fees.create')<a href="{{ route('fees.create', ['student_id' => $student->id]) }}" class="btn btn-light"><i class="bi bi-plus-lg"></i> One-off fee</a>@endcan
                 <a href="{{ route('fees.students') }}" class="btn btn-light"><i class="bi bi-arrow-left"></i> Back</a>
             </div>

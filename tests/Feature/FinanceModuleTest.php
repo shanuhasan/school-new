@@ -153,6 +153,27 @@ class FinanceModuleTest extends TestCase
         $this->actingAs($this->accountant)->get(route('fees.slip', $fee))->assertOk()->assertSee('Waived')->assertSee('Scholarship');
     }
 
+    public function test_printable_fee_statement_lists_all_periods_with_totals()
+    {
+        $student = $this->student();
+        Fee::create(['school_id' => $this->school->id, 'student_id' => $student->id, 'title' => 'Tuition', 'period' => 'April 2026', 'amount' => 1000, 'paid_amount' => 1000, 'status' => 'paid', 'due_date' => '2026-04-10']);
+        Fee::create(['school_id' => $this->school->id, 'student_id' => $student->id, 'title' => 'Tuition', 'period' => 'May 2026', 'amount' => 1000, 'waived_amount' => 300, 'paid_amount' => 0, 'status' => 'partial', 'due_date' => '2026-05-10']);
+
+        $this->actingAs($this->accountant)->get(route('fees.student.print', $student))
+            ->assertOk()
+            ->assertSee('FEE STATEMENT')
+            ->assertSee('Green Valley School')
+            ->assertSee('April 2026')->assertSee('May 2026')
+            ->assertSee('Balance due')
+            ->assertSee('700.00'); // 2000 billed - 300 waived - 1000 paid
+
+        // Students cannot reach it
+        $s = User::factory()->create(['current_school_id' => $this->school->id]);
+        $s->assignRole('Student');
+        $s->schools()->attach($this->school->id);
+        $this->actingAs($s)->get(route('fees.student.print', $student))->assertForbidden();
+    }
+
     public function test_student_fees_list_reflects_waived_amount_in_balance()
     {
         $student = $this->student();
